@@ -1,0 +1,10 @@
+## Interface: 11507
+## Title: GatherProfitScanner
+## Notes: Displays gathering item values based on profession levels and auction house prices.
+## Author: Pa_nts
+## Version: 1.0.2
+## SavedVariables: GatherProfitScannerData
+## Dependencies: Auctionator
+
+GatherProfitScanner.lua
+GatheringItems.lua
