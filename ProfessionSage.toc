@@ -1,0 +1,22 @@
+## Interface: 16001
+## Title: Profession Sage
+## Notes: Profit on every recipe, the cheapest route to your target skill, and a shopping list, right inside the profession window.
+## Category: Professions
+## Author: Pa_nts
+## Version: 2.0.0
+## IconTexture: Interface\Icons\INV_Misc_Book_09
+## OptionalDeps: Auctionator, Questie, QuestieDB, Blizzard_Professions
+## SavedVariables: ProfessionSageDB
+## SavedVariablesPerCharacter: ProfessionSageCharDB
+
+Data.lua
+Gathering.lua
+Core.lua
+Recipes.lua
+Prices.lua
+Sources.lua
+Planner.lua
+Tracker.lua
+ProfessionsUI.lua
+Panel.lua
+Commands.lua
