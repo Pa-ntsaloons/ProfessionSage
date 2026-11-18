@@ -89,6 +89,28 @@ function Planner.Plan(options)
     end
   end
 
+  -- Materials you already have count as paid for while choosing recipes, so a
+  -- route keeps using what you bought for it instead of switching to a
+  -- slightly cheaper recipe after you level up and plan again. The stock is
+  -- drawn down as the route uses it. (Step costs below still show full prices.)
+  local stock = {}
+  local function owned(item)
+    if stock[item] == nil then
+      stock[item] = ns.HaveCount(item)
+    end
+    return stock[item]
+  end
+  local function craftCostNow(recipe)
+    local cost = 0
+    for _, reagent in ipairs(recipe.reagents) do
+      local short = reagent.count - owned(reagent.item)
+      if short > 0 then
+        cost = cost + (Prices.Buy(reagent.item) or 0) * short
+      end
+    end
+    return cost
+  end
+
   local steps, acquired = {}, {}
   local total, materials, resale, learning, craftCount = 0, 0, 0, 0, 0
   local current
@@ -129,7 +151,7 @@ function Planner.Plan(options)
         local needsLearning = not acquired[recipe] and candidate.how ~= "known"
 
         -- Money per skill-up, with a recipe's price spread over its points.
-        local money = candidate.net / chance / gain
+        local money = (craftCostNow(recipe) - candidate.resale) / chance / gain
         if needsLearning and candidate.acquire > 0 then
           money = money + candidate.acquire / usefulPoints
         end
@@ -180,6 +202,9 @@ function Planner.Plan(options)
       table.insert(steps, current)
     end
     current.crafts = current.crafts + 1 / chance
+    for _, reagent in ipairs(recipe.reagents) do
+      stock[reagent.item] = math.max(0, owned(reagent.item) - reagent.count / chance)
+    end
     skill = math.min(target, skill + gain)
     current.to = skill
   end

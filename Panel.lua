@@ -39,6 +39,25 @@ local function chosenTarget(skillLine, skill, maxRank)
   return math.min(300, skill + 25)
 end
 
+-- The route the guide would show for this profession, with its target, or nil
+-- when there's nothing to plan. info is C_TradeSkillUI.GetBaseProfessionInfo().
+function Panel.RouteFor(skillLine, info)
+  local skill = info.skillLevel or 0
+  local maxRank = info.maxSkillLevel or skill
+  if skill >= 300 or not ns.RECIPES[skillLine] then
+    return nil
+  end
+  local target = chosenTarget(skillLine, skill, maxRank)
+  return Planner.Plan({
+    skillLine = skillLine,
+    from = skill,
+    to = target,
+    maxRank = maxRank,
+    onlyKnown = ns.db.onlyKnown,
+    mode = ns.db.routeMode or "cheap",
+  }), target
+end
+
 --------------------------------------------------------------------------------
 -- Rows
 --------------------------------------------------------------------------------
@@ -111,7 +130,7 @@ local function setupRow(row, entry)
     -- Share of crafts that give a point on this step (orange is always 100%).
     local rate = (entry.to - entry.from) / math.max(1, entry.crafts)
     local rateText = rate < 0.995 and string.format(" |cffa0a0a0%d%%|r", math.floor(rate * 100 + 0.5)) or ""
-    row.left:SetText(color:WrapTextInColorCode(Recipes.Name(recipe)) .. string.format(" |cffffffffx%d|r", entry.crafts) .. rateText)
+    row.left:SetText(string.format("|cffffffff%dx|r ", entry.crafts) .. color:WrapTextInColorCode(Recipes.Name(recipe)) .. rateText)
     local net = entry.net >= 0 and ns.Money(entry.net) or ("|cff40c040+|r" .. ns.Money(-entry.net))
     row.right:SetText(string.format("|cffa0a0a0%d-%d|r  %s", entry.from, entry.to, net))
     row:SetScript("OnEnter", function(self) craftTooltip(self, entry) end)
@@ -438,6 +457,9 @@ function Panel:RefreshNow()
   end
   auctionatorButton:SetEnabled(Prices.HasAuctionator())
   updateTabs()
+  -- Target, route style or options may have changed: the recipe list's
+  -- "Leveling route" filter follows the guide.
+  ns.Fire("ROUTE_CHANGED")
 end
 
 local queueRefresh = ns.Debounce(function() Panel:Refresh() end, 0.15)
@@ -583,7 +605,7 @@ local function createPanel()
   onlyKnownCheck:SetPoint("TOPLEFT", 12, -96)
 
   useBagsCheck = createCheck(frame, "Count what I have",
-    "Subtract materials in your bags and bank from the shopping list.",
+    "Subtract materials in your bags and bank from the shopping list, and keep the route using them: materials you already bought count as paid for, so the plan doesn't switch recipes after you level up.",
     function() return ns.db.useBags end, function(v) ns.db.useBags = v end)
   useBagsCheck:SetPoint("TOPLEFT", 186, -96)
 

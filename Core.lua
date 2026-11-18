@@ -137,6 +137,7 @@ local ACCOUNT_DEFAULTS = {
   onlyKnown = false,      -- leveling guide: only use recipes you already know
   routeMode = "cheap",    -- leveling guide: "cheap", "fast" or "balanced"
   useBags = true,         -- count what you already have
+  routeFilter = false,    -- recipe list: show only the leveling route, in order
   vendorPrices = {},      -- [item] = copper, learned at merchants
   learnAt = {},           -- [recipe spell] = skill a trainer requires
   recipeVendors = {},     -- [recipe item] = { [vendor name] = zone }, from visits

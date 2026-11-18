@@ -88,12 +88,21 @@ end
 -- Profit next to every recipe in the list
 --------------------------------------------------------------------------------
 
+local routeCrafts = {}  -- [recipe spell] = crafts, while the route filter is on
+
 local function decorateRow(button, node)
   local data = node and node.GetData and node:GetData()
   local info = data and data.recipeInfo
   local text = button.ProfessionSageProfit
   local recipe = info and Recipes.Get(info.recipeID)
   button.professionSageRecipe = recipe
+
+  -- Route filter: how many to craft, in front of the name.
+  local crafts = recipe and routeCrafts[recipe.spell]
+  if crafts and button.Label and button.Label:GetText() ~= button.professionSageLabel then
+    button.professionSageLabel = string.format("|cffffffff%dx|r %s", crafts, button.Label:GetText() or "")
+    button.Label:SetText(button.professionSageLabel)
+  end
 
   local profit = recipe and ns.db.showRowProfit and Prices.Profit(recipe)
   if not profit then
@@ -166,6 +175,146 @@ end)
 local queueRefreshRows = ns.Debounce(refreshRows, 0.2)
 ns.Listen("PRICES_CHANGED", queueRefreshRows)
 ns.Listen("ITEM_INFO", queueRefreshRows)
+
+--------------------------------------------------------------------------------
+-- "Leveling route" filter: the recipe list shows only what the leveling guide
+-- says to craft, in route order, with how many of each.
+--------------------------------------------------------------------------------
+
+local blizzardProvider  -- the list Blizzard built, to put back when the filter is off
+local applying = false
+
+local function recipeList()
+  return ProfessionsFrame and ProfessionsFrame.CraftingPage and ProfessionsFrame.CraftingPage.RecipeList
+end
+
+-- Our list for the open profession, or nil to keep Blizzard's.
+local function buildRouteProvider()
+  wipe(routeCrafts)
+  local skillLine, info = ns.GetOpenProfession()
+  if not skillLine or not ns.Panel or not ns.Panel.RouteFor then
+    return nil
+  end
+  if C_TradeSkillUI.IsTradeSkillLinked and C_TradeSkillUI.IsTradeSkillLinked() then
+    return nil
+  end
+  local result, target = ns.Panel.RouteFor(skillLine, info)
+  if not result then
+    return nil
+  end
+
+  local order = {}
+  for _, step in ipairs(result.steps) do
+    if step.kind == "craft" then
+      local spell = step.recipe.spell
+      if not routeCrafts[spell] then
+        routeCrafts[spell] = 0
+        table.insert(order, spell)
+      end
+      routeCrafts[spell] = routeCrafts[spell] + step.crafts
+    end
+  end
+  if #order == 0 then
+    return nil
+  end
+
+  local styleLabel = ""
+  for _, option in ipairs(Planner.MODES) do
+    if option.key == (ns.db.routeMode or "cheap") then
+      styleLabel = " - " .. option.label
+    end
+  end
+  local provider = CreateTreeDataProvider()
+  local category = provider:Insert({ categoryInfo = {
+    name = string.format("Route to %d%s", target, styleLabel),
+    categoryID = -1,
+  } })
+  category:Insert({ topPadding = true })
+  for _, spell in ipairs(order) do
+    local recipeInfo = C_TradeSkillUI.GetRecipeInfo(spell)
+    if recipeInfo then
+      category:Insert({ recipeInfo = recipeInfo })
+    end
+  end
+  category:Insert({ bottomPadding = true })
+  return provider
+end
+
+local function applyRouteFilter()
+  local list = recipeList()
+  if not list or not list.ScrollBox or not ns.db then
+    return
+  end
+  local provider = ns.db.routeFilter and buildRouteProvider()
+  if not provider then
+    wipe(routeCrafts)
+    provider = blizzardProvider
+  end
+  if not provider or provider == list.ScrollBox:GetDataProvider() then
+    refreshRows()
+    return
+  end
+  applying = true
+  list.ScrollBox:SetDataProvider(provider, ScrollBoxConstants.RetainScrollPosition)
+  applying = false
+  -- Keep the recipe you had selected.
+  local previous = list.GetPreviousRecipeID and list:GetPreviousRecipeID()
+  if previous and list.SelectRecipe then
+    pcall(list.SelectRecipe, list, { recipeID = previous }, false)
+  end
+end
+local queueRouteFilter = ns.Debounce(applyRouteFilter, 0.2)
+
+ns.OnProfessionsLoaded(function()
+  local list = recipeList()
+  -- Blizzard rebuilds the list often (filters, search, skill-ups): remember
+  -- its list and swap ours in again while the filter is on.
+  hooksecurefunc(list.ScrollBox, "SetDataProvider", function(_, provider)
+    if applying then
+      return
+    end
+    blizzardProvider = provider
+    if ns.db.routeFilter then
+      queueRouteFilter()
+    end
+  end)
+  blizzardProvider = list.ScrollBox:GetDataProvider()
+
+  if Menu and Menu.ModifyMenu then
+    Menu.ModifyMenu("MENU_PROFESSIONS_FILTER", function(_, rootDescription)
+      if not ns.GetOpenProfession() then
+        return
+      end
+      rootDescription:CreateDivider()
+      rootDescription:CreateTitle(ns.TITLE)
+      local check = rootDescription:CreateCheckbox("Leveling route",
+        function() return ns.db.routeFilter end,
+        function()
+          ns.db.routeFilter = not ns.db.routeFilter
+          applyRouteFilter()
+        end)
+      if check.SetTooltip then
+        check:SetTooltip(function(tooltip)
+          GameTooltip_SetTitle(tooltip, "Leveling route")
+          GameTooltip_AddNormalLine(tooltip, "Show only the recipes the leveling guide uses to reach your target skill, in the order to craft them, with how many of each. Set the target and route style in the guide.")
+        end)
+      end
+    end)
+  end
+  if ns.db.routeFilter then
+    queueRouteFilter()
+  end
+end, "route filter")
+
+local function onRouteInputsChanged()
+  if ns.db and ns.db.routeFilter then
+    queueRouteFilter()
+  end
+end
+ns.Listen("ROUTE_CHANGED", onRouteInputsChanged)
+ns.Listen("SKILL_CHANGED", onRouteInputsChanged)
+ns.Listen("KNOWN_CHANGED", onRouteInputsChanged)
+ns.Listen("PRICES_CHANGED", onRouteInputsChanged)
 
 --------------------------------------------------------------------------------
 -- "Plan" amount: how many you want to make, beyond what your bags allow.

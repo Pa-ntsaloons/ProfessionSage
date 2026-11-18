@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Leveling guide
+- Materials you already have now count as paid for when the guide picks recipes, so after you buy a route's materials and level up, re-planning keeps using them instead of switching to a different recipe. Turn off **Count what I have** to plan at full prices.
+- Route steps show the craft count before the recipe name ("12x Minor Healing Potion"), so it's no longer cut off.
+
+### Recipe list
+- New **Leveling route** option in the profession window's Filter menu: shows only the recipes the guide uses to reach your target, in the order to craft them, with how many of each in front of the name. Follows the guide's target and route style.
+
 ## 2.0.0 — 2026-11-17
 
 Rebuilt from GatherProfitScanner as **Profession Sage**, for WoW Forever. Everything now lives inside Blizzard's own profession window.
