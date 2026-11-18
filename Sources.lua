@@ -336,6 +336,100 @@ function Sources.RankNumber(rankName)
   return RANK_ORDER[rankName] or 1
 end
 
+-- First Aid and Cooking don't train Expert and Artisan at a trainer: Expert is
+-- a book you buy and read, Artisan is a quest. `at` is who to visit (by
+-- faction, or `any`): name, place, and where they stand (uiMapID, x, y in
+-- percent; Classic positions) for a waypoint. No map = no fixed spot.
+local TANARIS, DUSTWALLOW, ARATHI, ASHENVALE, DESOLACE = 1446, 1445, 1417, 1440, 1443
+
+local SPECIAL_RANKS = {
+  [129] = {
+    [2] = { book = 16084, name = "Expert First Aid - Under Wraps", needs = 125, at = {
+      Alliance = { name = "Deneb Walker", place = "Stromgarde, Arathi Highlands", map = ARATHI, x = 26.8, y = 59.0 },
+      Horde = { name = "Balai Lok'Wein", place = "Brackenwall Village, Dustwallow Marsh", map = DUSTWALLOW, x = 36.4, y = 30.4 } } },
+    [3] = { quest = "Triage", needs = 225, level = 35, at = {
+      Alliance = { name = "Doctor Gustaf VanHowzen", place = "Theramore Isle, Dustwallow Marsh", map = DUSTWALLOW, x = 67.7, y = 48.9 },
+      Horde = { name = "Doctor Gregory Victor", place = "Hammerfall, Arathi Highlands", map = ARATHI, x = 73.4, y = 36.8 } },
+      note = "Bandage the wounded soldiers in the doctor's triage area before they die." },
+  },
+  [185] = {
+    [2] = { book = 16072, name = "Expert Cookbook", needs = 125, at = {
+      Alliance = { name = "Shandrina", place = "Ashenvale, wanders the roads" },
+      Horde = { name = "Wulan", place = "Shadowprey Village, Desolace", map = DESOLACE, x = 26.2, y = 70.0 } } },
+    [3] = { quest = "Clamlette Surprise", needs = 225, level = 35, at = {
+      any = { name = "Dirge Quikcleave", place = "Gadgetzan, Tanaris", map = TANARIS, x = 52.6, y = 28.1 } },
+      note = "Bring 12 Giant Egg, 10 Zesty Clam Meat and 20 Alterac Swiss." },
+  },
+}
+
+-- How to reach a rank (2 Expert, 3 Artisan) when it isn't a trainer, or nil.
+function Sources.SpecialRank(skillLine, rank)
+  local ranks = SPECIAL_RANKS[skillLine]
+  return ranks and ranks[rank]
+end
+
+-- Who to visit for it, for your faction.
+function Sources.SpecialRankNPC(special)
+  return special.at[UnitFactionGroup("player")] or special.at.any
+end
+
+-- Puts a waypoint on someone: the map pin (and TomTom's arrow when installed).
+-- Returns true when one was set.
+function Sources.SetWaypoint(spot)
+  if not spot or not spot.map then
+    return false
+  end
+  local x, y = spot.x / 100, spot.y / 100
+  local set = false
+  if TomTom and type(TomTom.AddWaypoint) == "function" then
+    set = pcall(TomTom.AddWaypoint, TomTom, spot.map, x, y, { title = spot.name, from = ns.TITLE, persistent = false }) or set
+  end
+  if C_Map and C_Map.SetUserWaypoint and UiMapPoint and UiMapPoint.CreateFromCoordinates
+    and (not C_Map.CanSetUserWaypointOnMap or C_Map.CanSetUserWaypointOnMap(spot.map)) then
+    local ok = pcall(C_Map.SetUserWaypoint, UiMapPoint.CreateFromCoordinates(spot.map, x, y))
+    if ok and C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
+      pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, true)
+    end
+    set = ok or set
+  end
+  if set then
+    ns.Print(string.format("Waypoint set: %s, %s (%.1f, %.1f).", spot.name, spot.place, spot.x, spot.y))
+  end
+  return set
+end
+
+function Sources.AddSpecialRankTooltip(tooltip, special)
+  local where = Sources.SpecialRankNPC(special)
+  local whereText = where and string.format("%s |cffa0a0a0(%s)|r", where.name, where.place)
+  if special.book then
+    tooltip:AddLine(string.format("Buy and read the book %s (you can read it from skill %d). It isn't taught by trainers.",
+      special.name, special.needs), 1, 1, 1, true)
+    local s = Sources.Get(special.book)
+    if s and (#s.vendors > 0 or ns.Prices.Auction(special.book)) then
+      Sources.AddTooltip(tooltip, special.book)
+    elseif whereText then
+      tooltip:AddLine(" ")
+      tooltip:AddLine("Where to get it", 0.85, 0.7, 0.43)
+      tooltip:AddLine("Sold by " .. whereText, 1, 1, 1, true)
+    end
+  else
+    tooltip:AddLine(string.format("Complete the quest \"%s\" (needs skill %d and character level %d). It isn't taught by trainers.",
+      special.quest, special.needs, special.level), 1, 1, 1, true)
+    if whereText then
+      tooltip:AddLine(" ")
+      tooltip:AddLine("Quest from", 0.85, 0.7, 0.43)
+      tooltip:AddLine(whereText, 1, 1, 1, true)
+    end
+    if special.note then
+      tooltip:AddLine(special.note, 0.8, 0.8, 0.8, true)
+    end
+  end
+  if where and where.map then
+    tooltip:AddLine(" ")
+    tooltip:AddLine(string.format("Click to set a waypoint to %s.", where.name), 0.4, 0.8, 1, true)
+  end
+end
+
 function Sources.AddTrainerTooltip(tooltip, skillLine, minRank)
   local trainers = Sources.Trainers(skillLine, minRank)
   tooltip:AddLine(" ")

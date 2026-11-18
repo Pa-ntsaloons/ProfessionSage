@@ -5,7 +5,7 @@
 ## Author: Pa_nts
 ## Version: 2.1.0
 ## IconTexture: Interface\Icons\INV_Misc_Book_09
-## OptionalDeps: Auctionator, Questie, QuestieDB, Blizzard_Professions
+## OptionalDeps: Auctionator, Questie, QuestieDB, TomTom, Blizzard_Professions
 ## SavedVariables: ProfessionSageDB
 ## SavedVariablesPerCharacter: ProfessionSageCharDB
 

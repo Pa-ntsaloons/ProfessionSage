@@ -168,10 +168,29 @@ local function setupRow(row, entry)
     end)
   elseif entry.kind == "train" then
     row.icon:SetTexture(ICON_TRAIN)
-    row.left:SetText(string.format("|cffffd100Train %s|r", entry.rank))
+    local rankNumber = ns.Sources.RankNumber(entry.rank)
+    local special = current and current.skillLine and ns.Sources.SpecialRank(current.skillLine, rankNumber)
+    if special then
+      row.left:SetText(special.book and string.format("|cffffd100%s:|r read %s", entry.rank, special.name)
+        or string.format("|cffffd100%s:|r quest \"%s\"", entry.rank, special.quest))
+    else
+      row.left:SetText(string.format("|cffffd100Train %s|r", entry.rank))
+    end
     row.right:SetText(string.format("|cffa0a0a0at %d|r", entry.at))
+    if special then
+      row:SetScript("OnClick", function()
+        ns.Sources.SetWaypoint(ns.Sources.SpecialRankNPC(special))
+      end)
+    end
     row:SetScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+      if special then
+        GameTooltip:SetText(entry.rank .. " " .. (ns.PROFESSION_NAMES[current.skillLine] or ""))
+        GameTooltip:AddLine(string.format("Your skill stops at %d until you learn %s.", entry.at, entry.rank), 1, 1, 1, true)
+        ns.Sources.AddSpecialRankTooltip(GameTooltip, special)
+        GameTooltip:Show()
+        return
+      end
       GameTooltip:SetText("Train " .. entry.rank)
       GameTooltip:AddLine(string.format("Your skill stops at %d until you learn the next rank from a trainer.", entry.at), 1, 1, 1, true)
       if current and current.skillLine then

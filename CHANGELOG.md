@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Leveling guide
+- First Aid and Cooking: the Expert and Artisan steps now say how you actually get them. Expert is a book to buy and read (Expert First Aid - Under Wraps, Expert Cookbook) and Artisan is a quest (Triage, Clamlette Surprise), with where to go for your faction. These used to say "Train" and found no trainers.
+- Click one of those steps to set a waypoint to the NPC (map pin, plus a TomTom arrow if you have TomTom).
+
 ## 2.1.0 — 2026-11-17
 
 ### Leveling guide
