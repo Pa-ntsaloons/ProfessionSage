@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.1.0 — 2026-11-17
 
 ### Leveling guide
 - Materials you already have now count as paid for when the guide picks recipes, so after you buy a route's materials and level up, re-planning keeps using them instead of switching to a different recipe. Turn off **Count what I have** to plan at full prices.
