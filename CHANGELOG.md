@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.2.0 — 2026-11-17
 
 ### Leveling guide
 - First Aid and Cooking: the Expert and Artisan steps now say how you actually get them. Expert is a book to buy and read (Expert First Aid - Under Wraps, Expert Cookbook) and Artisan is a quest (Triage, Clamlette Surprise), with where to go for your faction. These used to say "Train" and found no trainers.
