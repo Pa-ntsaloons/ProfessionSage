@@ -183,6 +183,9 @@ ns.Listen("ITEM_INFO", queueRefreshRows)
 
 local blizzardProvider  -- the list Blizzard built, to put back when the filter is off
 local applying = false
+-- Our list is built once per route and reused, so it can go back up the moment
+-- Blizzard rebuilds its own (otherwise the unfiltered list flashes).
+local routeProvider, routeKey, routeSkillLine
 
 local function recipeList()
   return ProfessionsFrame and ProfessionsFrame.CraftingPage and ProfessionsFrame.CraftingPage.RecipeList
@@ -190,8 +193,8 @@ end
 
 -- Our list for the open profession, or nil to keep Blizzard's.
 local function buildRouteProvider()
-  wipe(routeCrafts)
   local skillLine, info = ns.GetOpenProfession()
+  routeSkillLine = skillLine
   if not skillLine or not ns.Panel or not ns.Panel.RouteFor then
     return nil
   end
@@ -203,19 +206,35 @@ local function buildRouteProvider()
     return nil
   end
 
-  local order = {}
+  local order, crafts = {}, {}
   for _, step in ipairs(result.steps) do
     if step.kind == "craft" then
       local spell = step.recipe.spell
-      if not routeCrafts[spell] then
-        routeCrafts[spell] = 0
+      if not crafts[spell] then
+        crafts[spell] = 0
         table.insert(order, spell)
       end
-      routeCrafts[spell] = routeCrafts[spell] + step.crafts
+      crafts[spell] = crafts[spell] + step.crafts
     end
   end
   if #order == 0 then
     return nil
+  end
+
+  -- Same route as last time: keep the list we have, so it doesn't redraw.
+  local parts = { skillLine, target, ns.db.routeMode or "cheap" }
+  for _, spell in ipairs(order) do
+    local recipeInfo = C_TradeSkillUI.GetRecipeInfo(spell)
+    table.insert(parts, string.format("%d:%d:%s", spell, crafts[spell], recipeInfo and tostring(recipeInfo.learned) or "-"))
+  end
+  local key = table.concat(parts, ",")
+  if routeProvider and key == routeKey then
+    return routeProvider
+  end
+  routeKey = key
+  wipe(routeCrafts)
+  for spell, count in pairs(crafts) do
+    routeCrafts[spell] = count
   end
 
   local styleLabel = ""
@@ -240,12 +259,23 @@ local function buildRouteProvider()
   return provider
 end
 
-local function applyRouteFilter()
+-- rebuild: plan the route again (it may have changed); otherwise reuse the
+-- list we have unless the profession changed.
+local function applyRouteFilter(rebuild)
   local list = recipeList()
   if not list or not list.ScrollBox or not ns.db then
     return
   end
-  local provider = ns.db.routeFilter and buildRouteProvider()
+  local provider
+  if ns.db.routeFilter then
+    if rebuild or not routeProvider or routeSkillLine ~= ns.GetOpenProfession() then
+      routeProvider = buildRouteProvider()
+      if not routeProvider then
+        routeKey = nil
+      end
+    end
+    provider = routeProvider
+  end
   if not provider then
     wipe(routeCrafts)
     provider = blizzardProvider
@@ -263,7 +293,7 @@ local function applyRouteFilter()
     pcall(list.SelectRecipe, list, { recipeID = previous }, false)
   end
 end
-local queueRouteFilter = ns.Debounce(applyRouteFilter, 0.2)
+local queueRouteRebuild = ns.Debounce(function() applyRouteFilter(true) end, 0.2)
 
 ns.OnProfessionsLoaded(function()
   local list = recipeList()
@@ -275,7 +305,8 @@ ns.OnProfessionsLoaded(function()
     end
     blizzardProvider = provider
     if ns.db.routeFilter then
-      queueRouteFilter()
+      -- Straight away, so Blizzard's list never shows.
+      ns.SafeCall("route filter", applyRouteFilter, false)
     end
   end)
   blizzardProvider = list.ScrollBox:GetDataProvider()
@@ -291,7 +322,7 @@ ns.OnProfessionsLoaded(function()
         function() return ns.db.routeFilter end,
         function()
           ns.db.routeFilter = not ns.db.routeFilter
-          applyRouteFilter()
+          applyRouteFilter(true)
         end)
       if check.SetTooltip then
         check:SetTooltip(function(tooltip)
@@ -302,13 +333,13 @@ ns.OnProfessionsLoaded(function()
     end)
   end
   if ns.db.routeFilter then
-    queueRouteFilter()
+    queueRouteRebuild()
   end
 end, "route filter")
 
 local function onRouteInputsChanged()
   if ns.db and ns.db.routeFilter then
-    queueRouteFilter()
+    queueRouteRebuild()
   end
 end
 ns.Listen("ROUTE_CHANGED", onRouteInputsChanged)
