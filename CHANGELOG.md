@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Leveling guide
+- Expert and Artisan steps now name the right trainers. Only a few NPCs teach these ranks (for example, Expert Alchemy is Ainethil in Darnassus or Doctor Herbert Halsey in Undercity); the guide used to list any trainer with "Expert" or "Artisan" in their title, but a title names one rank above what the trainer teaches.
+- Rank steps show what you need (skill, character level and cost) and, when one trainer teaches it for your faction, their name. Click the step to set a waypoint.
+- Mining trainers count as teaching every rank, so the Mining route no longer says no trainer was found.
+- The guide button now sits next to the profession's link button at the top of the window instead of under the side tabs. On the professions overview it stays visible and opens your last profession with the guide.
+
 ## 2.2.0 — 2026-11-17
 
 ### Leveling guide

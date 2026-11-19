@@ -4,7 +4,7 @@ local Recipes, Prices, Planner = ns.Recipes, ns.Prices, ns.Planner
 
 --------------------------------------------------------------------------------
 -- Leveling guide: a panel beside Blizzard's profession window, opened from a
--- side tab under the profession tabs.
+-- button next to the profession's link button.
 --------------------------------------------------------------------------------
 
 local Panel = {}
@@ -27,6 +27,7 @@ local targetLabel, targetBox, modeButton, routeModeControl
 local gatherView = {}  -- [skill line] = "craft" when Mining shows its smelting route
 local mode = "route"
 local current  -- { skillLine, skill, maxRank, target, result }
+local placePanel
 
 local function chosenTarget(skillLine, skill, maxRank)
   local saved = ns.char.targets[skillLine]
@@ -168,33 +169,32 @@ local function setupRow(row, entry)
     end)
   elseif entry.kind == "train" then
     row.icon:SetTexture(ICON_TRAIN)
-    local rankNumber = ns.Sources.RankNumber(entry.rank)
-    local special = current and current.skillLine and ns.Sources.SpecialRank(current.skillLine, rankNumber)
+    local Sources = ns.Sources
+    local skillLine = current and current.skillLine
+    local rankNumber = Sources.RankNumber(entry.rank)
+    local special = skillLine and Sources.SpecialRank(skillLine, rankNumber)
+    local trainers = skillLine and Sources.RankTrainers(skillLine, rankNumber)
+    local spot = skillLine and Sources.RankSpot(skillLine, rankNumber)
     if special then
       row.left:SetText(special.book and string.format("|cffffd100%s:|r read %s", entry.rank, special.name)
         or string.format("|cffffd100%s:|r quest \"%s\"", entry.rank, special.quest))
+    elseif trainers and #trainers == 1 then
+      row.left:SetText(string.format("|cffffd100Train %s:|r %s", entry.rank, trainers[1].name))
     else
       row.left:SetText(string.format("|cffffd100Train %s|r", entry.rank))
     end
     row.right:SetText(string.format("|cffa0a0a0at %d|r", entry.at))
-    if special then
+    if spot then
       row:SetScript("OnClick", function()
-        ns.Sources.SetWaypoint(ns.Sources.SpecialRankNPC(special))
+        Sources.SetWaypoint(spot)
       end)
     end
     row:SetScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-      if special then
-        GameTooltip:SetText(entry.rank .. " " .. (ns.PROFESSION_NAMES[current.skillLine] or ""))
-        GameTooltip:AddLine(string.format("Your skill stops at %d until you learn %s.", entry.at, entry.rank), 1, 1, 1, true)
-        ns.Sources.AddSpecialRankTooltip(GameTooltip, special)
-        GameTooltip:Show()
-        return
-      end
-      GameTooltip:SetText("Train " .. entry.rank)
-      GameTooltip:AddLine(string.format("Your skill stops at %d until you learn the next rank from a trainer.", entry.at), 1, 1, 1, true)
-      if current and current.skillLine then
-        ns.Sources.AddTrainerTooltip(GameTooltip, current.skillLine, ns.Sources.RankNumber(entry.rank))
+      if skillLine then
+        Sources.AddRankTooltip(GameTooltip, skillLine, rankNumber, entry.rank, entry.at)
+      else
+        GameTooltip:SetText("Train " .. entry.rank)
       end
       GameTooltip:Show()
     end)
@@ -369,6 +369,9 @@ function Panel:RefreshNow()
   end
 
   local skillLine, info = ns.GetOpenProfession()
+  if skillLine then
+    ns.char.lastGuideProfession = skillLine
+  end
   if not skillLine then
     header:SetText(ns.TITLE)
     skillText:SetText("|cff909090Open a crafting profession to plan a route.|r")
@@ -523,6 +526,34 @@ local function createButton(parent, text, width, onClick)
   return button
 end
 
+-- Blizzard's profession side tabs sit between the window and the guide:
+-- leave room for them, measured from where they actually end.
+local function sideTabsGap()
+  local right = ProfessionsFrame:GetRight()
+  local edge
+  local tabs = { ProfessionsFrame.ProfessionsOverviewTab }
+  for _, professionTab in ipairs(ProfessionsFrame.rightProfessionTabs or {}) do
+    table.insert(tabs, professionTab)
+  end
+  for _, sideTab in ipairs(tabs) do
+    local tabRight = sideTab and sideTab:IsShown() and sideTab:GetRight()
+    if tabRight and (not edge or tabRight > edge) then
+      edge = tabRight
+    end
+  end
+  if right and edge and edge > right then
+    return math.ceil(edge - right) + 4
+  end
+  return TAB_GAP + 14
+end
+
+placePanel = function()
+  frame:ClearAllPoints()
+  local gap = sideTabsGap()
+  frame:SetPoint("TOPLEFT", ProfessionsFrame, "TOPRIGHT", gap, 0)
+  frame:SetPoint("BOTTOMLEFT", ProfessionsFrame, "BOTTOMRIGHT", gap, 0)
+end
+
 local function createPanel()
   local ok
   ok, frame = pcall(CreateFrame, "Frame", "ProfessionSagePanel", ProfessionsFrame, "PortraitFrameTemplate")
@@ -535,11 +566,8 @@ local function createPanel()
       insets = { left = 11, right = 12, top = 12, bottom = 11 },
     })
   end
-  -- Leave room for the profession side tabs between the two frames.
-  local gap = (tab and tab:GetWidth() or TAB_GAP) + 2
   frame:SetWidth(PANEL_WIDTH)
-  frame:SetPoint("TOPLEFT", ProfessionsFrame, "TOPRIGHT", gap, 0)
-  frame:SetPoint("BOTTOMLEFT", ProfessionsFrame, "BOTTOMRIGHT", gap, 0)
+  placePanel()
   frame:EnableMouse(true)
   frame:Hide()
   if frame.SetTitle then
@@ -768,6 +796,7 @@ local function createPanel()
   sourceText:SetPoint("BOTTOM", 0, 6)
 
   frame:SetScript("OnShow", function()
+    placePanel()
     if tab then
       tab:SetChecked(true)
     end
@@ -793,79 +822,142 @@ function Panel:Toggle()
 end
 
 --------------------------------------------------------------------------------
--- Side tab under the profession tabs
+-- Guide button: next to Blizzard's "link your profession" button on the
+-- crafting page, and in the top corner on the professions overview (where it
+-- opens your last profession with the guide).
 --------------------------------------------------------------------------------
+
+local BUTTON_SIZE = 24
+
+-- The profession the overview button opens: the last one the guide showed,
+-- or your first one.
+local function guideProfession()
+  local professions = ns.GetPlayerProfessions()
+  for _, profession in ipairs(professions) do
+    if profession.skillLine == ns.char.lastGuideProfession then
+      return profession
+    end
+  end
+  return professions[1]
+end
 
 local function anchorTab()
   if not tab then
     return
   end
-  local last = ProfessionsFrame.ProfessionsOverviewTab
-  for _, professionTab in ipairs(ProfessionsFrame.rightProfessionTabs or {}) do
-    if professionTab:IsShown() then
-      last = professionTab
+  if frame and frame:IsShown() then
+    placePanel()
+  end
+  local page = ProfessionsFrame.CraftingPage
+  tab:ClearAllPoints()
+  tab.overview = not (page and page:IsShown())
+  if tab.overview then
+    tab:SetPoint("TOPRIGHT", ProfessionsFrame, "TOPRIGHT", -14, -28)
+  elseif page.LinkButton and page.LinkButton:IsShown() then
+    tab:SetPoint("LEFT", page.LinkButton, "RIGHT", 4, 0)
+  elseif page.RankBar then
+    tab:SetPoint("LEFT", page.RankBar, "RIGHT", 8, 0)
+  else
+    tab:SetPoint("TOPRIGHT", ProfessionsFrame, "TOPRIGHT", -14, -28)
+  end
+  -- Draw above whatever we're next to (the crafting page sits higher than
+  -- the window itself).
+  local above = tab.overview and ProfessionsFrame or page.LinkButton or page
+  tab:SetFrameStrata(above:GetFrameStrata())
+  tab:SetFrameLevel(math.max(ProfessionsFrame:GetFrameLevel() + 50, above:GetFrameLevel() + 10))
+  tab:Show()
+end
+
+local function openFromOverview()
+  local profession = guideProfession()
+  if not profession then
+    ns.Print("Learn a profession first: the guide plans routes for crafting and gathering professions.")
+    return
+  end
+  ns.db.panelShown = true
+  if C_TradeSkillUI and C_TradeSkillUI.OpenTradeSkill then
+    local ok = pcall(C_TradeSkillUI.OpenTradeSkill, profession.skillLine)
+    if ok then
+      return
     end
   end
-  tab:ClearAllPoints()
-  if last then
-    tab:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, -12)
-  else
-    tab:SetPoint("TOPLEFT", ProfessionsFrame, "TOPRIGHT", 0, -60)
-  end
+  ns.Print(string.format("Open %s from the professions window to see the guide.", profession.name or "a profession"))
 end
 
 local function createTab()
-  local ok
-  ok, tab = pcall(CreateFrame, "Frame", nil, ProfessionsFrame, "LargeSideTabButtonTemplate")
-  if not ok then
-    tab = CreateFrame("Button", nil, ProfessionsFrame)
-    tab:SetSize(40, 40)
-    tab.Icon = tab:CreateTexture(nil, "ARTWORK")
-    tab.Icon:SetAllPoints()
-    tab:SetScript("OnClick", function() Panel:Toggle() end)
-  else
-    tab.customMouseUpHandler = function(_, button, upInside)
-      if button == "LeftButton" and upInside ~= false then
-        Panel:Toggle()
-      end
-    end
-  end
+  tab = CreateFrame("Button", nil, ProfessionsFrame)
+  tab:SetSize(BUTTON_SIZE, BUTTON_SIZE)
+  tab:RegisterForClicks("LeftButtonUp")
+
+  tab.Icon = tab:CreateTexture(nil, "ARTWORK")
+  tab.Icon:SetAllPoints()
   tab.Icon:SetTexture(ICON_TAB)
+  tab.Icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+
+  local border = tab:CreateTexture(nil, "OVERLAY")
+  border:SetPoint("TOPLEFT", -1, 1)
+  border:SetPoint("BOTTOMRIGHT", 1, -1)
+  border:SetAtlas("ui-hud-minimap-button-border", false)
+  if not border:GetAtlas() then
+    border:Hide()
+  end
+
+  tab:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+  tab.SelectedTexture = tab:CreateTexture(nil, "OVERLAY", nil, 1)
+  tab.SelectedTexture:SetAllPoints()
+  tab.SelectedTexture:SetTexture("Interface\\Buttons\\CheckButtonHilight")
+  tab.SelectedTexture:SetBlendMode("ADD")
   tab.SetChecked = function(self, checked)
-    if self.SelectedTexture then
-      self.SelectedTexture:SetShown(checked)
-    end
+    self.SelectedTexture:SetShown(checked and not self.overview)
   end
   tab:SetChecked(false)
-  tab:HookScript("OnEnter", function(self)
+
+  tab:SetScript("OnClick", function(self)
+    if self.overview then
+      openFromOverview()
+    else
+      Panel:Toggle()
+    end
+  end)
+  tab:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:SetText(ns.TITLE)
-    GameTooltip:AddLine("Leveling guide and shopping list", 1, 1, 1)
+    if self.overview then
+      local profession = guideProfession()
+      GameTooltip:AddLine(profession and string.format("Open %s with the leveling guide.", profession.name)
+        or "Leveling guide and shopping list", 1, 1, 1, true)
+    else
+      GameTooltip:AddLine("Leveling guide and shopping list", 1, 1, 1)
+    end
     GameTooltip:Show()
   end)
-  tab:HookScript("OnLeave", GameTooltip_Hide)
+  tab:SetScript("OnLeave", GameTooltip_Hide)
 
   anchorTab()
   if type(ProfessionsFrame.RefreshRightTabs) == "function" then
     hooksecurefunc(ProfessionsFrame, "RefreshRightTabs", anchorTab)
   end
   ProfessionsFrame:HookScript("OnShow", anchorTab)
+  local page = ProfessionsFrame.CraftingPage
+  if type(page.Init) == "function" then
+    hooksecurefunc(page, "Init", function() C_Timer.After(0, anchorTab) end)
+  end
 end
 
 ns.OnProfessionsLoaded(function()
   createTab()
   createPanel()
-  -- Only beside the crafting page, not Blizzard's professions overview.
+  -- The guide sits beside the crafting page, not Blizzard's professions overview.
   local page = ProfessionsFrame.CraftingPage
   page:HookScript("OnShow", function()
-    tab:Show()
+    anchorTab()
+    C_Timer.After(0, anchorTab)  -- the link button may show a moment later
     if ns.db.panelShown then frame:Show() end
   end)
   page:HookScript("OnHide", function()
-    tab:Hide()
+    anchorTab()
     frame:Hide()
   end)
-  tab:SetShown(page:IsShown())
   if ns.db.panelShown and page:IsShown() then
     frame:Show()
   end

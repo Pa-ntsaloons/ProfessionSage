@@ -232,6 +232,7 @@ end
 --------------------------------------------------------------------------------
 
 local NPC_FLAG_TRAINER = 16
+local ALL_RANKS  -- set below
 
 -- Words in a trainer's title for each profession.
 local TRAINER_WORDS = {
@@ -257,11 +258,16 @@ local function titleMatches(title, skillLine)
   return false
 end
 
+-- A trainer's title names one rank above the highest they teach:
+-- "Journeyman X" teaches Apprentice (0), "Expert X" up to Journeyman (1),
+-- "Artisan X" up to Expert (2), "Master X" up to Artisan (3).
 local function rankOf(title)
-  if title:find("Artisan") or title:find("Master") then
+  if title:find("Master") then
     return 3
-  elseif title:find("Expert") then
+  elseif title:find("Artisan") then
     return 2
+  elseif title:find("Journeyman") then
+    return 0
   end
   return 1
 end
@@ -302,10 +308,15 @@ end
 -- Trainers who can teach at least `minRank` (1 any, 2 Expert, 3 Artisan),
 -- the ones in your current zone first.
 function Sources.Trainers(skillLine, minRank)
+  local curated = Sources.RankTrainers(skillLine, minRank)
+  if curated then
+    return curated
+  end
   local here = GetRealZoneText and GetRealZoneText()
   local result = {}
+  local anyRank = ALL_RANKS[skillLine]
   for _, trainer in ipairs(allTrainers(skillLine)) do
-    if trainer.rank >= (minRank or 1) then
+    if anyRank or trainer.rank >= (minRank or 1) then
       table.insert(result, trainer)
     end
   end
@@ -322,45 +333,127 @@ function Sources.Trainers(skillLine, minRank)
   return result
 end
 
--- The trainer rank a recipe or training step needs.
+-- The trainer rank a recipe or training step needs (0 Apprentice ... 3 Artisan).
 function Sources.RankForSkill(skill)
   if skill >= 225 then
     return 3
   elseif skill >= 150 then
     return 2
+  elseif skill >= 75 then
+    return 1
   end
-  return 1
+  return 0
 end
 
 function Sources.RankNumber(rankName)
   return RANK_ORDER[rankName] or 1
 end
 
--- First Aid and Cooking don't train Expert and Artisan at a trainer: Expert is
--- a book you buy and read, Artisan is a quest. `at` is who to visit (by
--- faction, or `any`): name, place, and where they stand (uiMapID, x, y in
--- percent; Classic positions) for a waypoint. No map = no fixed spot.
-local TANARIS, DUSTWALLOW, ARATHI, ASHENVALE, DESOLACE = 1446, 1445, 1417, 1440, 1443
+--------------------------------------------------------------------------------
+-- Who teaches each rank. Questie's titles are a guide for Apprentice and
+-- Journeyman, but Expert and Artisan are only taught by a few NPCs, listed
+-- here (WoW Forever, checked against warcrafttavern.com and
+-- wow-professions.com). Positions are uiMapID and x, y in percent, for
+-- waypoints; no map means no fixed spot.
+--------------------------------------------------------------------------------
 
+local STORMWIND, ORGRIMMAR, IRONFORGE, THUNDER_BLUFF, DARNASSUS, UNDERCITY = 1453, 1454, 1455, 1456, 1457, 1458
+local ELWYNN, STONETALON, FERALAS, SWAMP, STRANGLETHORN, TANARIS = 1429, 1442, 1444, 1435, 1434, 1446
+local HINTERLANDS, DUSTWALLOW, HILLSBRAD, ARATHI, ASHENVALE, DESOLACE = 1425, 1445, 1424, 1417, 1440, 1443
+
+-- Mining, Herbalism and Skinning trainers teach every rank.
+ALL_RANKS = { [186] = true, [182] = true, [393] = true }
+
+local function npc(name, placeText, faction, map, x, y)
+  return { name = name, place = placeText, faction = faction, map = map, x = x, y = y }
+end
+
+-- [skill line][rank] = list of trainers (faction nil = both).
+local RANK_TRAINERS = {
+  [171] = { -- Alchemy
+    [2] = { npc("Ainethil", "Craftsmen's Terrace, Darnassus", "Alliance", DARNASSUS, 55.5, 23.1),
+            npc("Doctor Herbert Halsey", "The Apothecarium, Undercity", "Horde", UNDERCITY, 48.3, 72.3) },
+    [3] = { npc("Kylanna Windwhisper", "Feathermoon Stronghold, Feralas", "Alliance", FERALAS, 32.6, 43.7),
+            npc("Rogvar", "Stonard, Swamp of Sorrows", "Horde", SWAMP, 48.3, 55.5) },
+  },
+  [164] = { -- Blacksmithing
+    [2] = { npc("Bengus Deepforge", "The Great Forge, Ironforge", "Alliance", IRONFORGE, 51.6, 42.4),
+            npc("Saru Steelfury", "Valley of Honor, Orgrimmar", "Horde", ORGRIMMAR, 82.4, 23.5) },
+    [3] = { npc("Brikk Keencraft", "Booty Bay, Stranglethorn Vale", nil, STRANGLETHORN, 29.0, 75.5) },
+  },
+  [333] = { -- Enchanting
+    [2] = { npc("Kitta Firewind", "Tower of Azora, Elwynn Forest", "Alliance", ELWYNN, 64.9, 70.7),
+            npc("Hgarth", "Sun Rock Retreat, Stonetalon Mountains", "Horde", STONETALON, 49.2, 57.2) },
+    [3] = { npc("Annora", "inside Uldaman, Badlands", nil) },
+  },
+  [202] = { -- Engineering
+    [2] = { npc("Springspindle Fizzlegear", "Tinker Town, Ironforge", "Alliance", IRONFORGE, 68.8, 45.2),
+            npc("Roxxik", "Valley of Honor, Orgrimmar", "Horde", ORGRIMMAR, 76.0, 25.0) },
+    [3] = { npc("Buzzek Bracketswing", "Gadgetzan, Tanaris", nil, TANARIS, 52.2, 27.6) },
+  },
+  [165] = { -- Leatherworking
+    [2] = { npc("Telonis", "Craftsmen's Terrace, Darnassus", "Alliance", DARNASSUS, 64.6, 21.5),
+            npc("Una", "Middle Rise, Thunder Bluff", "Horde", THUNDER_BLUFF, 41.7, 42.7) },
+    [3] = { npc("Drakk Stonehand", "Aerie Peak, The Hinterlands", "Alliance", HINTERLANDS, 13.4, 43.4),
+            npc("Hahrana Ironhide", "Camp Mojache, Feralas", "Horde", FERALAS, 74.4, 43.1) },
+  },
+  [197] = { -- Tailoring
+    [2] = { npc("Georgio Bolero", "Mage Quarter, Stormwind", "Alliance", STORMWIND, 53.3, 81.7),
+            npc("Josef Gregorian", "Magic Quarter, Undercity", "Horde", UNDERCITY, 70.8, 30.6) },
+    [3] = { npc("Timothy Worthington", "Theramore Isle, Dustwallow Marsh", "Alliance", DUSTWALLOW, 66.2, 51.6),
+            npc("Daryl Stack", "Tarren Mill, Hillsbrad Foothills", "Horde", HILLSBRAD, 63.6, 20.8) },
+  },
+}
+
+-- First Aid and Cooking don't train Expert and Artisan: Expert is a book you
+-- buy and read, Artisan is a quest. `at` is who to visit, by faction or `any`.
 local SPECIAL_RANKS = {
   [129] = {
-    [2] = { book = 16084, name = "Expert First Aid - Under Wraps", needs = 125, at = {
-      Alliance = { name = "Deneb Walker", place = "Stromgarde, Arathi Highlands", map = ARATHI, x = 26.8, y = 59.0 },
-      Horde = { name = "Balai Lok'Wein", place = "Brackenwall Village, Dustwallow Marsh", map = DUSTWALLOW, x = 36.4, y = 30.4 } } },
+    [2] = { book = 16084, name = "Expert First Aid - Under Wraps", needs = 125, cost = 10000, at = {
+      Alliance = npc("Deneb Walker", "Stromgarde Keep, Arathi Highlands", nil, ARATHI, 27.0, 58.8),
+      Horde = npc("Balai Lok'Wein", "Brackenwall Village, Dustwallow Marsh", nil, DUSTWALLOW, 36.5, 30.5) } },
     [3] = { quest = "Triage", needs = 225, level = 35, at = {
-      Alliance = { name = "Doctor Gustaf VanHowzen", place = "Theramore Isle, Dustwallow Marsh", map = DUSTWALLOW, x = 67.7, y = 48.9 },
-      Horde = { name = "Doctor Gregory Victor", place = "Hammerfall, Arathi Highlands", map = ARATHI, x = 73.4, y = 36.8 } },
+      Alliance = npc("Doctor Gustaf VanHowzen", "Theramore Isle, Dustwallow Marsh", nil, DUSTWALLOW, 67.5, 48.8),
+      Horde = npc("Doctor Gregory Victor", "Hammerfall, Arathi Highlands", nil, ARATHI, 73.5, 36.9) },
       note = "Bandage the wounded soldiers in the doctor's triage area before they die." },
   },
   [185] = {
-    [2] = { book = 16072, name = "Expert Cookbook", needs = 125, at = {
-      Alliance = { name = "Shandrina", place = "Ashenvale, wanders the roads" },
-      Horde = { name = "Wulan", place = "Shadowprey Village, Desolace", map = DESOLACE, x = 26.2, y = 70.0 } } },
+    [2] = { book = 16072, name = "Expert Cookbook", needs = 125, cost = 10000, at = {
+      Alliance = npc("Shandrina", "Silverwind Refuge, Ashenvale", nil, ASHENVALE, 49.5, 67.0),
+      Horde = npc("Wulan", "Shadowprey Village, Desolace", nil, DESOLACE, 26.1, 69.7) } },
     [3] = { quest = "Clamlette Surprise", needs = 225, level = 35, at = {
-      any = { name = "Dirge Quikcleave", place = "Gadgetzan, Tanaris", map = TANARIS, x = 52.6, y = 28.1 } },
+      any = npc("Dirge Quikcleave", "Gadgetzan, Tanaris", nil, TANARIS, 52.6, 27.9) },
       note = "Bring 12 Giant Egg, 10 Zesty Clam Meat and 20 Alterac Swiss." },
   },
 }
+
+-- What a trainer rank needs: skill, character level, cost in copper.
+local RANK_NEEDS = {
+  [1] = { skill = 50, level = 10, cost = 500 },
+  [2] = { skill = 125, level = 20, cost = 5000 },
+  [3] = { skill = 200, level = 35, cost = 50000 },
+}
+
+local function myFaction()
+  playerFaction = playerFaction or UnitFactionGroup("player")
+  return playerFaction
+end
+
+-- The listed Expert/Artisan trainers for your faction, or nil when this rank
+-- isn't in the list (Questie's trainers are used then).
+function Sources.RankTrainers(skillLine, rank)
+  local list = RANK_TRAINERS[skillLine] and RANK_TRAINERS[skillLine][rank]
+  if not list then
+    return nil
+  end
+  local result = {}
+  for _, entry in ipairs(list) do
+    if not entry.faction or entry.faction == myFaction() then
+      table.insert(result, { name = entry.name, zone = entry.place, spot = entry })
+    end
+  end
+  return result
+end
 
 -- How to reach a rank (2 Expert, 3 Artisan) when it isn't a trainer, or nil.
 function Sources.SpecialRank(skillLine, rank)
@@ -370,7 +463,21 @@ end
 
 -- Who to visit for it, for your faction.
 function Sources.SpecialRankNPC(special)
-  return special.at[UnitFactionGroup("player")] or special.at.any
+  return special.at[myFaction()] or special.at.any
+end
+
+-- Where a waypoint for learning this rank should go, or nil.
+function Sources.RankSpot(skillLine, rank)
+  local special = Sources.SpecialRank(skillLine, rank)
+  if special then
+    local spot = Sources.SpecialRankNPC(special)
+    return spot and spot.map and spot or nil
+  end
+  for _, trainer in ipairs(Sources.RankTrainers(skillLine, rank) or {}) do
+    if trainer.spot.map then
+      return trainer.spot
+    end
+  end
 end
 
 -- Puts a waypoint on someone: the map pin (and TomTom's arrow when installed).
@@ -398,19 +505,20 @@ function Sources.SetWaypoint(spot)
   return set
 end
 
-function Sources.AddSpecialRankTooltip(tooltip, special)
+local function addSpecialRankLines(tooltip, special)
   local where = Sources.SpecialRankNPC(special)
   local whereText = where and string.format("%s |cffa0a0a0(%s)|r", where.name, where.place)
   if special.book then
-    tooltip:AddLine(string.format("Buy and read the book %s (you can read it from skill %d). It isn't taught by trainers.",
-      special.name, special.needs), 1, 1, 1, true)
-    local s = Sources.Get(special.book)
-    if s and (#s.vendors > 0 or ns.Prices.Auction(special.book)) then
-      Sources.AddTooltip(tooltip, special.book)
-    elseif whereText then
-      tooltip:AddLine(" ")
-      tooltip:AddLine("Where to get it", 0.85, 0.7, 0.43)
+    tooltip:AddLine(string.format("Buy and read the book %s (%s, readable from skill %d). It isn't taught by trainers.",
+      special.name, ns.Money(special.cost), special.needs), 1, 1, 1, true)
+    tooltip:AddLine(" ")
+    tooltip:AddLine("Where to get it", 0.85, 0.7, 0.43)
+    if whereText then
       tooltip:AddLine("Sold by " .. whereText, 1, 1, 1, true)
+    end
+    local auction = ns.Prices.Auction(special.book)
+    if auction then
+      tooltip:AddLine("On the auction house for " .. ns.Money(auction), 1, 1, 1)
     end
   else
     tooltip:AddLine(string.format("Complete the quest \"%s\" (needs skill %d and character level %d). It isn't taught by trainers.",
@@ -424,9 +532,29 @@ function Sources.AddSpecialRankTooltip(tooltip, special)
       tooltip:AddLine(special.note, 0.8, 0.8, 0.8, true)
     end
   end
-  if where and where.map then
+end
+
+-- Tooltip for a "learn the next rank" step: rank 1 Journeyman, 2 Expert,
+-- 3 Artisan; `at` is the skill the route stops at.
+function Sources.AddRankTooltip(tooltip, skillLine, rank, rankName, at)
+  tooltip:SetText(string.format("%s %s", rankName, ns.PROFESSION_NAMES[skillLine] or ""))
+  tooltip:AddLine(string.format("Your skill stops at %d until you learn %s.", at, rankName), 1, 1, 1, true)
+  local special = Sources.SpecialRank(skillLine, rank)
+  if special then
+    addSpecialRankLines(tooltip, special)
+  else
+    local needs = RANK_NEEDS[rank]
+    if needs then
+      local level = (needs.level and not ALL_RANKS[skillLine] and not SPECIAL_RANKS[skillLine]) and string.format(", character level %d", needs.level) or ""
+      tooltip:AddLine(string.format("Needs skill %d%s. Costs %s.", needs.skill, level, ns.Money(needs.cost)),
+        0.8, 0.8, 0.8, true)
+    end
+    Sources.AddTrainerTooltip(tooltip, skillLine, rank)
+  end
+  local spot = Sources.RankSpot(skillLine, rank)
+  if spot then
     tooltip:AddLine(" ")
-    tooltip:AddLine(string.format("Click to set a waypoint to %s.", where.name), 0.4, 0.8, 1, true)
+    tooltip:AddLine(string.format("Click to set a waypoint to %s.", spot.name), 0.4, 0.8, 1, true)
   end
 end
 
