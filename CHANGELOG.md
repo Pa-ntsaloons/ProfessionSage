@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.3.0 — 2026-11-18
+## 2.2.1 — 2026-11-18
 
 ### Leveling guide
 - Expert and Artisan steps now name the right trainers. Only a few NPCs teach these ranks (for example, Expert Alchemy is Ainethil in Darnassus or Doctor Herbert Halsey in Undercity); the guide used to list any trainer with "Expert" or "Artisan" in their title, but a title names one rank above what the trainer teaches.
