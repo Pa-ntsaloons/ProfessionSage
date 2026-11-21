@@ -50,6 +50,15 @@ function Prices.Buy(item)
   end
 end
 
+-- Adds "Vendor price" or "Auction price" for buying one, when known.
+function Prices.AddBuyLine(tooltip, item)
+  local buy, source = Prices.Buy(item)
+  if buy then
+    tooltip:AddLine(" ")
+    ns.TooltipPair(tooltip, source == "vendor" and "Vendor price" or "Auction price", ns.Coins(buy))
+  end
+end
+
 -- What one sells for: the better of the auction price (after the AH cut) and
 -- the vendor price. Returns copper, "auction" / "vendor"; nil if unknown.
 function Prices.Sell(item)
@@ -115,21 +124,6 @@ end
 -- Learn vendor prices at merchants (only for crafting reagents)
 --------------------------------------------------------------------------------
 
-local reagentSet
-local function isReagent(item)
-  if not reagentSet then
-    reagentSet = {}
-    for _, rows in pairs(ns.RECIPES) do
-      for _, row in ipairs(rows) do
-        for id in row[7]:gmatch("(%d+):") do
-          reagentSet[tonumber(id)] = true
-        end
-      end
-    end
-  end
-  return reagentSet[item]
-end
-
 local function merchantItem(index)
   if C_MerchantFrame and C_MerchantFrame.GetItemInfo then
     local info = C_MerchantFrame.GetItemInfo(index)
@@ -151,7 +145,7 @@ local function learnMerchant()
     local item = GetMerchantItemID(index)
     local price, stack, available, extendedCost = merchantItem(index)
     -- Unlimited supply, plain gold price.
-    if item and isReagent(item) and price and price > 0 and available == -1 and not extendedCost then
+    if item and ns.Recipes.IsReagent(item) and price and price > 0 and available == -1 and not extendedCost then
       local each = math.floor(price / math.max(1, stack or 1) + 0.5)
       if ns.db.vendorPrices[item] ~= each then
         ns.db.vendorPrices[item] = each

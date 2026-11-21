@@ -72,6 +72,38 @@ function Recipes.Get(spell)
   return bySpell[spell]
 end
 
+-- Items the recipe data uses: reagents (to learn their vendor prices) and
+-- recipe items (to remember vendors that sell them). Built on first use.
+local reagentItems, recipeItems
+
+local function indexItems()
+  reagentItems, recipeItems = {}, {}
+  for _, rows in pairs(ns.RECIPES) do
+    for _, row in ipairs(rows) do
+      for id in row[7]:gmatch("(%d+):") do
+        reagentItems[tonumber(id)] = true
+      end
+      if row[8] ~= 0 then
+        recipeItems[row[8]] = true
+      end
+    end
+  end
+end
+
+function Recipes.IsReagent(item)
+  if not reagentItems then
+    indexItems()
+  end
+  return reagentItems[item]
+end
+
+function Recipes.IsRecipeItem(item)
+  if not recipeItems then
+    indexItems()
+  end
+  return recipeItems[item]
+end
+
 function Recipes.Name(recipe)
   local name = ns.GetSpellName(recipe.spell)
   if name and name ~= "" then
@@ -185,27 +217,41 @@ local function scanTrainer()
   if not (GetNumTrainerServices and GetTrainerServiceInfo and GetTrainerServiceSkillReq) or not ns.db then
     return
   end
-  local byName = {}
+  -- Trainers list some recipes by the item they make ("Tin Bar" for Smelt
+  -- Tin), so recipes are matched by the item's link, then by either name.
+  local lookups = {}
+  local function lookupFor(skillLine)
+    if not lookups[skillLine] then
+      local byName, byItem = {}, {}
+      for _, recipe in ipairs(Recipes.For(skillLine)) do
+        byName[Recipes.Name(recipe)] = recipe
+        if recipe.item then
+          byItem[recipe.item] = byItem[recipe.item] or recipe
+          local itemName = ns.ItemName(recipe.item)
+          if itemName and not byName[itemName] then
+            byName[itemName] = recipe
+          end
+        end
+      end
+      lookups[skillLine] = { byName = byName, byItem = byItem }
+    end
+    return lookups[skillLine]
+  end
+
   local learned = 0
   for index = 1, GetNumTrainerServices() do
     local serviceName = GetTrainerServiceInfo(index)
     local skillName, skillRank = GetTrainerServiceSkillReq(index)
-    if serviceName and skillName and skillRank then
-      for skillLine, professionName in pairs(ns.PROFESSION_NAMES) do
-        if professionName == skillName then
-          if not byName[skillLine] then
-            byName[skillLine] = {}
-            for _, recipe in ipairs(Recipes.For(skillLine)) do
-              byName[skillLine][Recipes.Name(recipe)] = recipe
-            end
-          end
-          local recipe = byName[skillLine][serviceName]
-          if recipe and ns.db.learnAt[recipe.spell] ~= skillRank then
-            ns.db.learnAt[recipe.spell] = skillRank
-            recipe.learn, recipe.learnExact = skillRank, true
-            learned = learned + 1
-          end
-        end
+    local skillLine = serviceName and skillRank and skillName and ns.SkillLineByName(skillName)
+    if skillLine then
+      local lookup = lookupFor(skillLine)
+      local link = GetTrainerServiceItemLink and GetTrainerServiceItemLink(index)
+      local itemID = link and tonumber(link:match("item:(%d+)"))
+      local recipe = (itemID and lookup.byItem[itemID]) or lookup.byName[serviceName]
+      if recipe and ns.db.learnAt[recipe.spell] ~= skillRank then
+        ns.db.learnAt[recipe.spell] = skillRank
+        recipe.learn, recipe.learnExact = skillRank, true
+        learned = learned + 1
       end
     end
   end
@@ -214,8 +260,46 @@ local function scanTrainer()
   end
 end
 
-local queueTrainer = ns.Debounce(scanTrainer, 0.3)
-ns.On("TRAINER_SHOW", queueTrainer)
+-- The trainer list only holds what its filters show, so the first scan at each
+-- trainer turns every filter on (available, unavailable, already known), reads
+-- the whole list, and puts your filters back. Later updates scan what's shown.
+local TRAINER_FILTERS = { "available", "unavailable", "used" }
+local fullScanDone = false
+
+local function scanWholeTrainer()
+  if fullScanDone then
+    return scanTrainer()
+  end
+  fullScanDone = true
+  if not (GetTrainerServiceTypeFilter and SetTrainerServiceTypeFilter) then
+    return scanTrainer()
+  end
+  local saved = {}
+  for _, filter in ipairs(TRAINER_FILTERS) do
+    local shown = GetTrainerServiceTypeFilter(filter)
+    saved[filter] = shown and shown ~= 0
+    if not saved[filter] then
+      SetTrainerServiceTypeFilter(filter, true, false)
+    end
+  end
+  local ok, problem = pcall(scanTrainer)
+  for _, filter in ipairs(TRAINER_FILTERS) do
+    if not saved[filter] then
+      SetTrainerServiceTypeFilter(filter, false, false)
+    end
+  end
+  if not ok then
+    error(problem, 0)
+  end
+end
+
+local queueTrainer = ns.Debounce(function()
+  ns.SafeCall("trainer scan", scanWholeTrainer)
+end, 0.3)
+ns.On("TRAINER_SHOW", function()
+  fullScanDone = false
+  queueTrainer()
+end)
 ns.On("TRAINER_UPDATE", queueTrainer)
 
 local skillChanged = ns.Debounce(function() ns.Fire("SKILL_CHANGED") end, 0.3)

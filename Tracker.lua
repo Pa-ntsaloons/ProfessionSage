@@ -104,11 +104,8 @@ local function getRow(index)
     if self.item then
       GameTooltip:SetOwner(self, "ANCHOR_LEFT")
       GameTooltip:SetItemByID(self.item)
-      local price, source = ns.Prices.Buy(self.item)
-      if price then
-        GameTooltip:AddLine(" ")
-        GameTooltip:AddDoubleLine(source == "vendor" and "Vendor price" or "Auction price", ns.Coins(price), 1, 0.82, 0, 1, 1, 1)
-      end
+      ns.Prices.AddBuyLine(GameTooltip, self.item)
+      ns.AddAltLines(GameTooltip, self.item)
       GameTooltip:Show()
     end
   end)

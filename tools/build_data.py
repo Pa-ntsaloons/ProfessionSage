@@ -11,17 +11,19 @@ import os
 import sys
 import urllib.request
 
-BUILD = sys.argv[1] if len(sys.argv) > 1 else "1.60.1.70938"
-HERE = os.path.dirname(os.path.abspath(__file__))
-CACHE = sys.argv[2] if len(sys.argv) > 2 else os.path.join(HERE, ".cache")
-OUT = os.path.join(HERE, "..", "Data.lua")
+import learn_data
+
+BUILD = sys.argv[1] if len(sys.argv) > 1 else learn_data.BUILD
+CACHE = sys.argv[2] if len(sys.argv) > 2 else learn_data.CACHE
+OUT = learn_data.DATA
 
 TABLES = ["SkillLine", "SkillLineAbility", "SpellName", "SpellEffect", "SpellReagents",
           "ItemEffect", "ItemXItemEffect", "Item", "ItemSparse"]
 
-# Skill lines that have recipes giving skill-ups. Gathering professions only
-# level by gathering, except Mining, whose smelting recipes are listed here.
-PROFESSIONS = [171, 164, 333, 202, 165, 197, 185, 129, 186, 40]
+# Skill lines with recipes. Mining's smelting gives skill-ups; Herbalism,
+# Fishing and Skinning only have a few camp recipes (Fish Bowl and so on),
+# listed for their tooltips, not for leveling routes.
+PROFESSIONS = [171, 164, 333, 202, 165, 197, 185, 129, 186, 40, 182, 356, 393]
 
 # Reagents sold by vendors in unlimited supply. Item data gives a "buy price"
 # for many items that no vendor sells, so this list is picked by hand; the addon
@@ -70,6 +72,9 @@ def lua_string(text):
 
 
 def main():
+    # Learn levels checked by hand for WoW Forever (the client data has none
+    # for trainer recipes), from learn_levels.csv.
+    confirmed = learn_data.confirmed_levels()
     skill_lines = {r["ID"]: r for r in table("SkillLine")}
     spell_names = {r["ID"]: r["Name_lang"] for r in table("SpellName")}
 
@@ -113,6 +118,9 @@ def main():
         if not name or any(marker in name for marker in JUNK_MARKERS):
             skipped += 1
             continue
+        if spell in confirmed and confirmed[spell] is None:
+            skipped += 1  # still in the client files, but no longer learnable
+            continue
         if spell not in created and spell not in reagents:
             skipped += 1
             continue
@@ -122,12 +130,15 @@ def main():
         yellow = num(r["TrivialSkillLineRankLow"])
 
         # The skill needed to learn it. MinSkillLineRank is 1 for nearly every
-        # recipe in this client, so: the recipe item's required skill when
-        # there is one; 1 for recipes you get with the profession; otherwise a
-        # cautious estimate (most recipes turn yellow 5-25 points after you can
-        # learn them). The addon replaces estimates with what trainers show.
+        # recipe in this client, so: a level confirmed for WoW Forever
+        # (learn_levels.csv); the recipe item's required skill when there is
+        # one; 1 for recipes you get with the profession; otherwise a cautious
+        # estimate (most recipes turn yellow 5-25 points after you can learn
+        # them). The addon replaces estimates with what trainers show.
         required = [num(sparse[str(i)]["RequiredSkillRank"]) for i in recipe_items if str(i) in sparse]
-        if required:
+        if spell in confirmed:
+            learn, exact = confirmed[spell], 1
+        elif required:
             learn, exact = max(1, min(required)), 1
         elif r["AcquireMethod"] == ACQUIRE_WITH_PROFESSION:
             learn, exact = 1, 1

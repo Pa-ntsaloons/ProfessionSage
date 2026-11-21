@@ -31,7 +31,7 @@ end
 
 function commands.track()
   if not ns.char.shopping then
-    return ns.Print("Nothing is being tracked. Use \"Plan to make\" or the guide's Track materials button.")
+    return ns.Print("Nothing is being tracked. Use \"Plan\" under a recipe or the guide's Track materials button.")
   end
   ns.Tracker:Refresh()
 end
@@ -70,7 +70,7 @@ SlashCmdList.PROFESSIONSAGE = function(input)
     if ns.Panel and ProfessionsFrame and ProfessionsFrame:IsShown() then
       ns.Panel:Toggle()
     else
-      ns.Print("Open a crafting profession, then click the book tab on the right of the window (or type /sage again).")
+      ns.Print("Open a profession, then click the book button next to the window's close button (or type /sage again).")
     end
     return
   end

@@ -5,9 +5,14 @@ ns.Planner = Planner
 
 local Recipes, Prices = ns.Recipes, ns.Prices
 
--- Skill caps of each training rank (Apprentice, Journeyman, Expert, Artisan).
-local RANK_CAPS = { 75, 150, 225, 300 }
-local RANK_NAMES = { [75] = "Journeyman", [150] = "Expert", [225] = "Artisan" }
+-- Skill caps of each training rank (Apprentice, Journeyman, Expert, Artisan),
+-- and the rank that lifts each cap.
+local RANK_CAPS, RANK_NAMES = {}, {}
+for _, step in ipairs(ns.RANK_STEPS) do
+  table.insert(RANK_CAPS, step.at)
+  RANK_NAMES[step.at] = step.name
+end
+table.insert(RANK_CAPS, ns.MAX_SKILL)
 
 -- Route styles: "cheap" (lowest net cost), "fast" (fewest crafts), "balanced".
 Planner.MODES = {
@@ -58,8 +63,8 @@ Returns {
   steps = list of
     { kind = "craft", recipe, from, to, crafts, cost, each }
     { kind = "learn", recipe, cost, how = "trainer" / "auction" }
-    { kind = "train", at, rank }
-    { kind = "stuck", at }
+    { kind = "train", at, rank, skillLine }
+    { kind = "stuck", at, skillLine }
   shopping = list of { item, count } (before subtracting what you have)
   total = expected copper, reached = skill the route gets to
 }
@@ -136,7 +141,7 @@ function Planner.Plan(options)
       if cap >= RANK_CAPS[#RANK_CAPS] then
         break
       end
-      table.insert(steps, { kind = "train", at = skill, rank = RANK_NAMES[cap] or "the next rank" })
+      table.insert(steps, { kind = "train", at = skill, rank = RANK_NAMES[cap] or "the next rank", skillLine = skillLine })
       cap = nextCap(cap)
       current = nil
     end
@@ -176,7 +181,7 @@ function Planner.Plan(options)
     end
 
     if not best then
-      table.insert(steps, { kind = "stuck", at = skill })
+      table.insert(steps, { kind = "stuck", at = skill, skillLine = skillLine })
       break
     end
 

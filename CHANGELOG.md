@@ -1,5 +1,36 @@
 # Changelog
 
+## 2.3.0 — 2026-11-21
+
+### Recipe learn levels
+- First Aid: every recipe now uses the skill the trainer really teaches it at, instead of an estimate. Among others, Heavy Mageweave Bandage is learned at 240 (was 230), Runecloth Bandage at 260 (was 250), Silk Bandage at 150 (was 140) and Wool Bandage at 80 (was 70), so routes no longer ask for a recipe before you can learn it.
+- First Aid: Crystal Infused Bandage is no longer suggested; it can't be learned in WoW Forever.
+- Alchemy: every trainer recipe now uses the skill it's really taught at (45 recipes corrected; some were 30 points off, like Elixir of Minor Strength at 15, not 45).
+- Cooking: 7 recipes now use the skill trainers really teach them at.
+- Blacksmithing: about 90 recipes now use the skill trainers really teach them at.
+- Mining: smelting now uses the skill trainers really teach each bar at; most were 5-25 points off (Tin is learned at 65, not 40).
+- Opening a trainer now records the learn level of everything it teaches, even recipes its filters hide; your filters are put back straight away. Recipes the trainer lists by the item they make (smelting shows "Tin Bar", not "Smelt Tin") are recognized too.
+
+### Leveling guide
+- Route steps are easier to tell apart: training the next rank is a gold section header, learning a recipe is indented with a blue band, and crafting is indented further.
+- The guide button sits in the profession window's title bar, next to the close button, on every page, so it no longer moves around.
+- `/sage` with no profession open now points to the guide button (it still described the old side tab).
+
+### Gathering
+- Gathering guide works like a crafting route: pick a target skill, and it lists each skill range on the way with where to go and what to gather, with a "Train" step wherever you need the next rank (Fishing's Expert book and Artisan quest included).
+- Gathering guide: hover a skill range to see what's new in it and what you need before you can go past it (the next rank, with its cost and trainer, or for Fishing the Expert book and Nat Pagle's quest). Click it to set a waypoint.
+- Gathering guide: the current skill range now says "(your skill: 132)" instead of "(you are here)", which read like it was about the zones below it.
+- Herbs, ore veins and skinnable creatures show the skill they need in their tooltip ("Herbalism 185 (you: 120)"), red when you can't gather them yet and otherwise colored like recipes for how likely a skill-up is. Skinning works it out from the creature's level.
+- Herbalism, Fishing and Skinning recipes (Fish Bowl, Incense Candle, Camp Chair and their bigger versions) now get the same tooltip and profit as other recipes.
+
+### Plan and materials
+- "Plan to make" is now just "Plan", and has a checkbox to turn the materials popup on or off. Off, the status next to the amount still shows what you're short of, but nothing pops up.
+- Plan: the status says whether everything is in your bags or some of it is in your bank, and hovering it lists each material with how many you need and who has it where (you and, with Syndicator, your other characters). It no longer runs into Blizzard's "Track Recipe" checkbox.
+- With Syndicator (or Baganator) installed, materials you still need show what your other characters have: "alts" counts in the shopping list, and in the Plan and materials popup tooltips each character with where they keep it, laid out like Syndicator's own tooltips. Only characters on your realm and faction count. Without Syndicator nothing changes.
+
+### Other
+- Under the hood: the guide is split into smaller files (rows, panel, guide button) and shared code for ranks, tooltips and item lookups lives in one place. Nothing you see changes.
+
 ## 2.2.1 — 2026-11-18
 
 ### Leveling guide

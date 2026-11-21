@@ -36,14 +36,13 @@ local function zoneName(areaID)
   end
 end
 
-local playerFaction
 local function friendlyToMe(friendly)
   -- Questie: "A", "H", "AH" (or nil when anyone can use them).
   if type(friendly) ~= "string" or friendly == "" or friendly == "AH" then
     return true
   end
-  playerFaction = playerFaction or UnitFactionGroup("player")
-  return (friendly == "A" and playerFaction == "Alliance") or (friendly == "H" and playerFaction == "Horde")
+  local faction = ns.PlayerFaction()
+  return (friendly == "A" and faction == "Alliance") or (friendly == "H" and faction == "Horde")
 end
 
 local function npcInfo(lib, npc)
@@ -176,8 +175,7 @@ end
 -- Adds "where to get it" lines to a tooltip.
 function Sources.AddTooltip(tooltip, item)
   local s = Sources.Get(item)
-  tooltip:AddLine(" ")
-  tooltip:AddLine("Where to get it", 0.85, 0.7, 0.43)
+  ns.TooltipHeading(tooltip, "Where to get it")
   local any = false
 
   for index, vendor in ipairs(s.vendors) do
@@ -242,7 +240,11 @@ local TRAINER_WORDS = {
   [393] = { "Skinn" }, [356] = { "Fishing", "Fisherman" },
 }
 
-local RANK_ORDER = { Apprentice = 1, Journeyman = 1, Expert = 2, Artisan = 3 }
+-- Rank names to numbers (Apprentice counts as the first, like Journeyman).
+local RANK_ORDER = { Apprentice = 1 }
+for _, step in ipairs(ns.RANK_STEPS) do
+  RANK_ORDER[step.name] = step.rank
+end
 
 local trainerCache = {}
 
@@ -335,14 +337,13 @@ end
 
 -- The trainer rank a recipe or training step needs (0 Apprentice ... 3 Artisan).
 function Sources.RankForSkill(skill)
-  if skill >= 225 then
-    return 3
-  elseif skill >= 150 then
-    return 2
-  elseif skill >= 75 then
-    return 1
+  local rank = 0
+  for _, step in ipairs(ns.RANK_STEPS) do
+    if skill >= step.at then
+      rank = step.rank
+    end
   end
-  return 0
+  return rank
 end
 
 function Sources.RankNumber(rankName)
@@ -425,6 +426,13 @@ local SPECIAL_RANKS = {
       any = npc("Dirge Quikcleave", "Gadgetzan, Tanaris", nil, TANARIS, 52.6, 27.9) },
       note = "Bring 12 Giant Egg, 10 Zesty Clam Meat and 20 Alterac Swiss." },
   },
+  [356] = {
+    [2] = { book = 16083, name = "Expert Fishing - The Bass and You", needs = 125, level = 20, cost = 10000, at = {
+      any = npc("Old Man Heming", "Booty Bay, Stranglethorn Vale", nil, STRANGLETHORN, 27.6, 77.4) } },
+    [3] = { quest = "Nat Pagle, Angler Extreme", needs = 225, at = {
+      any = npc("Nat Pagle", "Dustwallow Marsh", nil, DUSTWALLOW, 58.4, 60.0) },
+      note = "Nat Pagle asks for rare fish caught around Azeroth." },
+  },
 }
 
 -- What a trainer rank needs: skill, character level, cost in copper.
@@ -433,11 +441,6 @@ local RANK_NEEDS = {
   [2] = { skill = 125, level = 20, cost = 5000 },
   [3] = { skill = 200, level = 35, cost = 50000 },
 }
-
-local function myFaction()
-  playerFaction = playerFaction or UnitFactionGroup("player")
-  return playerFaction
-end
 
 -- The listed Expert/Artisan trainers for your faction, or nil when this rank
 -- isn't in the list (Questie's trainers are used then).
@@ -448,7 +451,7 @@ function Sources.RankTrainers(skillLine, rank)
   end
   local result = {}
   for _, entry in ipairs(list) do
-    if not entry.faction or entry.faction == myFaction() then
+    if not entry.faction or entry.faction == ns.PlayerFaction() then
       table.insert(result, { name = entry.name, zone = entry.place, spot = entry })
     end
   end
@@ -463,7 +466,7 @@ end
 
 -- Who to visit for it, for your faction.
 function Sources.SpecialRankNPC(special)
-  return special.at[myFaction()] or special.at.any
+  return special.at[ns.PlayerFaction()] or special.at.any
 end
 
 -- Where a waypoint for learning this rank should go, or nil.
@@ -508,11 +511,11 @@ end
 local function addSpecialRankLines(tooltip, special)
   local where = Sources.SpecialRankNPC(special)
   local whereText = where and string.format("%s |cffa0a0a0(%s)|r", where.name, where.place)
+  local levelText = special.level and string.format(" and character level %d", special.level) or ""
   if special.book then
-    tooltip:AddLine(string.format("Buy and read the book %s (%s, readable from skill %d). It isn't taught by trainers.",
-      special.name, ns.Money(special.cost), special.needs), 1, 1, 1, true)
-    tooltip:AddLine(" ")
-    tooltip:AddLine("Where to get it", 0.85, 0.7, 0.43)
+    tooltip:AddLine(string.format("Buy and read the book %s (%s, readable from skill %d%s). It isn't taught by trainers.",
+      special.name, ns.Money(special.cost), special.needs, levelText), 1, 1, 1, true)
+    ns.TooltipHeading(tooltip, "Where to get it")
     if whereText then
       tooltip:AddLine("Sold by " .. whereText, 1, 1, 1, true)
     end
@@ -521,11 +524,10 @@ local function addSpecialRankLines(tooltip, special)
       tooltip:AddLine("On the auction house for " .. ns.Money(auction), 1, 1, 1)
     end
   else
-    tooltip:AddLine(string.format("Complete the quest \"%s\" (needs skill %d and character level %d). It isn't taught by trainers.",
-      special.quest, special.needs, special.level), 1, 1, 1, true)
+    tooltip:AddLine(string.format("Complete the quest \"%s\" (needs skill %d%s). It isn't taught by trainers.",
+      special.quest, special.needs, levelText), 1, 1, 1, true)
     if whereText then
-      tooltip:AddLine(" ")
-      tooltip:AddLine("Quest from", 0.85, 0.7, 0.43)
+      ns.TooltipHeading(tooltip, "Quest from")
       tooltip:AddLine(whereText, 1, 1, 1, true)
     end
     if special.note then
@@ -538,6 +540,11 @@ end
 -- 3 Artisan; `at` is the skill the route stops at.
 function Sources.AddRankTooltip(tooltip, skillLine, rank, rankName, at)
   tooltip:SetText(string.format("%s %s", rankName, ns.PROFESSION_NAMES[skillLine] or ""))
+  Sources.AddRankLines(tooltip, skillLine, rank, rankName, at)
+end
+
+-- The body of a rank tooltip (what it takes and where), for any tooltip.
+function Sources.AddRankLines(tooltip, skillLine, rank, rankName, at)
   tooltip:AddLine(string.format("Your skill stops at %d until you learn %s.", at, rankName), 1, 1, 1, true)
   local special = Sources.SpecialRank(skillLine, rank)
   if special then
@@ -560,8 +567,7 @@ end
 
 function Sources.AddTrainerTooltip(tooltip, skillLine, minRank)
   local trainers = Sources.Trainers(skillLine, minRank)
-  tooltip:AddLine(" ")
-  tooltip:AddLine("Trainers", 0.85, 0.7, 0.43)
+  ns.TooltipHeading(tooltip, "Trainers")
   if #trainers == 0 then
     tooltip:AddLine(Sources.HasQuestie() and "None found in Questie's database." or
       "Install Questie to see trainers here, or visit one and it will be remembered.", 0.6, 0.6, 0.6, true)
@@ -589,20 +595,19 @@ local function rememberTrainer()
   if not name or GetNumTrainerServices() == 0 then
     return
   end
-  local skillName = GetTrainerServiceSkillReq(1)
-  for skillLine, professionName in pairs(ns.PROFESSION_NAMES) do
-    if professionName == skillName then
-      ns.db.trainers[skillLine] = ns.db.trainers[skillLine] or {}
-      local title = ""
-      if C_TooltipInfo and C_TooltipInfo.GetUnit then
-        local data = C_TooltipInfo.GetUnit("npc")
-        local line = data and data.lines and data.lines[2]
-        title = line and line.leftText or ""
-      end
-      ns.db.trainers[skillLine][name] = { zone = GetRealZoneText and GetRealZoneText() or "", title = title }
-      trainerCache[skillLine] = nil
-    end
+  local skillLine = ns.SkillLineByName(GetTrainerServiceSkillReq(1))
+  if not skillLine then
+    return
   end
+  ns.db.trainers[skillLine] = ns.db.trainers[skillLine] or {}
+  local title = ""
+  if C_TooltipInfo and C_TooltipInfo.GetUnit then
+    local data = C_TooltipInfo.GetUnit("npc")
+    local line = data and data.lines and data.lines[2]
+    title = line and line.leftText or ""
+  end
+  ns.db.trainers[skillLine][name] = { zone = GetRealZoneText and GetRealZoneText() or "", title = title }
+  trainerCache[skillLine] = nil
 end
 
 ns.On("TRAINER_SHOW", ns.Debounce(rememberTrainer, 0.3))
@@ -610,21 +615,6 @@ ns.On("TRAINER_SHOW", ns.Debounce(rememberTrainer, 0.3))
 --------------------------------------------------------------------------------
 -- Remember vendors you visit that sell recipes.
 --------------------------------------------------------------------------------
-
-local recipeItems
-local function isRecipeItem(item)
-  if not recipeItems then
-    recipeItems = {}
-    for _, rows in pairs(ns.RECIPES) do
-      for _, row in ipairs(rows) do
-        if row[8] ~= 0 then
-          recipeItems[row[8]] = true
-        end
-      end
-    end
-  end
-  return recipeItems[item]
-end
 
 local function rememberVendor()
   if not ns.db or not GetMerchantNumItems or not GetMerchantItemID then
@@ -638,7 +628,7 @@ local function rememberVendor()
   local learned = false
   for index = 1, GetMerchantNumItems() do
     local item = GetMerchantItemID(index)
-    if item and isRecipeItem(item) then
+    if item and ns.Recipes.IsRecipeItem(item) then
       ns.db.recipeVendors[item] = ns.db.recipeVendors[item] or {}
       if ns.db.recipeVendors[item][vendor] ~= zone then
         ns.db.recipeVendors[item][vendor] = zone

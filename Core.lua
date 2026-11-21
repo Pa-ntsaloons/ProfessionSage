@@ -20,6 +20,40 @@ function ns.Print(...)
 end
 
 --------------------------------------------------------------------------------
+-- Training ranks. Apprentice is what you start with; each step lifts your skill
+-- cap. `at` is the cap it lifts, `rank` numbers the step for trainers.
+--------------------------------------------------------------------------------
+
+ns.MAX_SKILL = 300
+ns.RANK_STEPS = {
+  { at = 75, rank = 1, name = "Journeyman" },
+  { at = 150, rank = 2, name = "Expert" },
+  { at = 225, rank = 3, name = "Artisan" },
+}
+
+local playerFaction
+-- "Alliance" or "Horde".
+function ns.PlayerFaction()
+  playerFaction = playerFaction or UnitFactionGroup("player")
+  return playerFaction
+end
+
+--------------------------------------------------------------------------------
+-- Tooltip lines used everywhere
+--------------------------------------------------------------------------------
+
+-- A gold label with a white value on the right.
+function ns.TooltipPair(tooltip, label, value)
+  tooltip:AddDoubleLine(label, value, 1, 0.82, 0, 1, 1, 1)
+end
+
+-- A gap, then a section title.
+function ns.TooltipHeading(tooltip, text)
+  tooltip:AddLine(" ")
+  tooltip:AddLine(text, 0.85, 0.7, 0.43)
+end
+
+--------------------------------------------------------------------------------
 -- Errors: runs fn protected. An error is printed once per session in chat and
 -- the last few are kept in saved variables, so they can be reported even
 -- without an error-catching addon.
@@ -138,6 +172,7 @@ local ACCOUNT_DEFAULTS = {
   routeMode = "cheap",    -- leveling guide: "cheap", "fast" or "balanced"
   useBags = true,         -- count what you already have
   routeFilter = false,    -- recipe list: show only the leveling route, in order
+  planPopup = true,       -- Plan to make: open the materials popup when you're short
   vendorPrices = {},      -- [item] = copper, learned at merchants
   learnAt = {},           -- [recipe spell] = skill a trainer requires
   recipeVendors = {},     -- [recipe item] = { [vendor name] = zone }, from visits
@@ -254,12 +289,152 @@ function ns.HaveCount(item)
   return ns.GetItemCount(item, true) or 0
 end
 
+-- The name Syndicator knows this character by. WoW Forever names can have two
+-- parts ("Danasha Ragehoof") where UnitName gives only the first, so ask
+-- Syndicator first.
+function ns.MyCharacterName()
+  local api = Syndicator and Syndicator.API
+  if api and type(api.GetCurrentCharacter) == "function" and type(api.GetByCharacterFullName) == "function" then
+    local ok, fullName = pcall(api.GetCurrentCharacter)
+    local data = ok and fullName and api.GetByCharacterFullName(fullName)
+    if type(data) == "table" and data.details and data.details.character then
+      return data.details.character
+    end
+  end
+  return UnitName("player")
+end
+
+-- What your other characters have (bags, bank and mail), from Syndicator when
+-- it's installed: only characters you could mail it from (same realm and
+-- faction). Returns the total and a list of { name, count, bags, bank, mail,
+-- className, race, sex }, most first.
+function ns.AltCounts(item)
+  local api = Syndicator and Syndicator.API
+  if not api or type(api.GetInventoryInfoByItemID) ~= "function" then
+    return 0, {}
+  end
+  if type(api.IsReady) == "function" and not api.IsReady() then
+    return 0, {}
+  end
+  local ok, info = pcall(api.GetInventoryInfoByItemID, item, true, true)
+  if not ok or type(info) ~= "table" then
+    return 0, {}
+  end
+  local me = ns.MyCharacterName()
+  local total, list = 0, {}
+  for _, character in ipairs(info.characters or {}) do
+    local count = (character.bags or 0) + (character.bank or 0) + (character.mail or 0)
+    if character.character ~= me and count > 0 then
+      total = total + count
+      table.insert(list, { name = character.character, count = count, bags = character.bags or 0,
+                           bank = character.bank or 0, mail = character.mail or 0,
+                           className = character.className, race = character.race, sex = character.sex })
+    end
+  end
+  table.sort(list, function(a, b) return a.count > b.count end)
+  return total, list
+end
+
+local function linkColor(text)
+  if LINK_FONT_COLOR then
+    return LINK_FONT_COLOR:WrapTextInColorCode(text)
+  end
+  return "|cff66bbff" .. text .. "|r"
+end
+
+local function white(value)
+  return "|cffffffff" .. tostring(value) .. "|r"
+end
+
+-- A character as Syndicator shows them: race icon and class-colored name.
+local function altLabel(alt)
+  local name = alt.name
+  local colors = CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS
+  local color = alt.className and colors and colors[alt.className]
+  if color and color.colorStr then
+    name = "|c" .. color.colorStr .. name .. "|r"
+  end
+  local utilities = Syndicator and Syndicator.Utilities
+  if alt.race and alt.sex and utilities and type(utilities.GetCharacterIcon) == "function" then
+    local ok, icon = pcall(utilities.GetCharacterIcon, alt.race, alt.sex)
+    if ok and icon then
+      name = icon .. " " .. name
+    end
+  end
+  return name
+end
+
+-- "Bags: 1, Bank: 4, Mail: 2" (only the places that hold some).
+local function altPlaces(alt)
+  local parts = {}
+  for _, place in ipairs({ { "Bags", alt.bags }, { "Bank", alt.bank }, { "Mail", alt.mail } }) do
+    if place[2] > 0 then
+      table.insert(parts, place[1] .. ": " .. white(place[2]))
+    end
+  end
+  return linkColor(table.concat(parts, ", "))
+end
+
+-- Adds who else has this item, laid out like Syndicator's tooltips: a total,
+-- then each character with where they keep it.
+function ns.AddAltLines(tooltip, item)
+  local total, list = ns.AltCounts(item)
+  if total == 0 then
+    return
+  end
+  tooltip:AddLine(" ")
+  tooltip:AddDoubleLine("On your other characters", linkColor("Total: " .. white(total)), 1, 0.82, 0)
+  for _, alt in ipairs(list) do
+    tooltip:AddDoubleLine("  " .. altLabel(alt), altPlaces(alt))
+  end
+end
+
+-- One material in a "what you need" list: the item and how many you need
+-- (green when your bags have it, yellow when the bank covers the rest, red
+-- when you're short), then you and each of your other characters holding
+-- some, with where they keep it.
+function ns.AddMaterialLines(tooltip, item, need, bags, bank)
+  local name, icon = ns.ItemLabel(item)
+  local color = bags >= need and "|cff40c040" or (bags + bank >= need and "|cffffd100" or "|cffff6060")
+  tooltip:AddDoubleLine(string.format("|T%s:0|t %s", icon or 134400, name),
+    linkColor("Need: " .. color .. need .. "|r"), 1, 1, 1)
+  if bags + bank > 0 then
+    local _, className = UnitClass("player")
+    local _, race = UnitRace("player")
+    local me = { name = ns.MyCharacterName(), className = className, race = race, sex = UnitSex("player"),
+                 bags = bags, bank = bank, mail = 0 }
+    tooltip:AddDoubleLine("  " .. altLabel(me) .. " |cffa0a0a0(you)|r", altPlaces(me))
+  end
+  local _, list = ns.AltCounts(item)
+  for _, alt in ipairs(list) do
+    tooltip:AddDoubleLine("  " .. altLabel(alt), altPlaces(alt))
+  end
+end
+
 local itemInfoChanged = ns.Debounce(function() ns.Fire("ITEM_INFO") end, 0.2)
 ns.On("GET_ITEM_INFO_RECEIVED", itemInfoChanged)
 
 --------------------------------------------------------------------------------
 -- Your professions
 --------------------------------------------------------------------------------
+
+-- Whether the guide knows this skill line (recipes or a gathering guide).
+local function isSupported(skillLine)
+  return ns.RECIPES[skillLine] ~= nil or (ns.GATHERING ~= nil and ns.GATHERING[skillLine] ~= nil)
+end
+
+-- The skill line whose profession is called this ("Mining"), or nil.
+function ns.SkillLineByName(name)
+  -- Text the client marks secret can't be compared.
+  if (issecretvalue and issecretvalue(name)) or type(name) ~= "string" then
+    return nil
+  end
+  for skillLine, professionName in pairs(ns.PROFESSION_NAMES) do
+    if professionName == name then
+      return skillLine
+    end
+  end
+end
 
 -- Skill lines with recipes in our data that this character has, with skill.
 -- { skillLine, name, icon, rank, maxRank }
@@ -270,7 +445,7 @@ function ns.GetPlayerProfessions()
   end
   for _, index in pairs({ GetProfessions() }) do
     local name, icon, rank, maxRank, _, _, skillLine = GetProfessionInfo(index)
-    if skillLine and (ns.RECIPES[skillLine] or (ns.GATHERING and ns.GATHERING[skillLine])) then
+    if skillLine and isSupported(skillLine) then
       table.insert(result, { skillLine = skillLine, name = name, icon = icon, rank = rank, maxRank = maxRank })
     end
   end
@@ -295,7 +470,7 @@ function ns.GetOpenProfession()
     return nil
   end
   for _, id in ipairs({ info.professionID, info.parentProfessionID }) do
-    if id and (ns.RECIPES[id] or (ns.GATHERING and ns.GATHERING[id])) then
+    if id and isSupported(id) then
       return id, info
     end
   end

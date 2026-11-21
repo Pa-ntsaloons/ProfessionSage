@@ -65,6 +65,23 @@
         "LOOT_ITEM_PUSHED_SELF_MULTIPLE",
         "LOOT_ITEM_PUSHED_SELF",
         "LOOT_ITEM_PUSHED_MULTIPLE",
-        "LOOT_ITEM_PUSHED"
+        "LOOT_ITEM_PUSHED",
+        "ProfessionsFrame",
+        "ITEM_QUALITY_COLORS",
+        "GameTooltip_Hide",
+        "ScrollUtil",
+        "CreateDataProvider",
+        "ScrollBoxConstants",
+        "CreateScrollBoxListLinearView",
+        "MinimalSliderWithSteppersMixin",
+        "GameTooltip_SetTitle",
+        "GameTooltip_AddNormalLine",
+        "CreateTreeDataProvider",
+        "UiMapPoint",
+        "GetTrainerServiceTypeFilter",
+        "SetTrainerServiceTypeFilter",
+        "RAID_CLASS_COLORS",
+        "UNIT_SKINNABLE_LEATHER",
+        "TooltipDataProcessor"
     ]
 }

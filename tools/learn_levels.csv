@@ -1,0 +1,226 @@
+recipe_spell,skill,name,source
+10841,240,Heavy Mageweave Bandage,"wow-professions.com/forever/first-aid-leveling-guide (""The doctor teaches it at 240""); confirmed in game"
+18629,260,Runecloth Bandage,"wow-professions.com/forever/first-aid-leveling-guide (""The doctor teaches it at 260"")"
+1230117,20,First Aid Kit,wowhead.com/forever/spell=1230117 (looked up by hand)
+3276,40,Heavy Linen Bandage,wowhead.com/forever/spell=3276 (looked up by hand)
+1244431,1,Minor Healing Potion,wowhead.com/forever/spell=1244431 (looked up by hand)
+3277,80,Wool Bandage,wowhead.com/forever/spell=3277 (looked up by hand)
+7934,80,Anti-Venom,wowhead.com/forever/spell=7934 (looked up by hand)
+1244432,55,Lesser Healing Potion,wowhead.com/forever/spell=1244432 (looked up by hand)
+1259342,90,Simple Poultice,wowhead.com/forever/spell=1259342 (looked up by hand)
+3278,115,Heavy Wool Bandage,wowhead.com/forever/spell=3278 (looked up by hand)
+1259347,120,Woolen Tourniquet,wowhead.com/forever/spell=1259347 (looked up by hand)
+1244433,110,Healing Potion,wowhead.com/forever/spell=1244433 (looked up by hand)
+7928,150,Silk Bandage,wowhead.com/forever/spell=7928 (looked up by hand)
+18630,290,Heavy Runecloth Bandage,wowhead.com/forever/spell=18630 (looked up by hand)
+30021,removed,Crystal Infused Bandage,wowhead.com/forever/spell=30021 (looked up by hand)
+1249631,120,Magenta Dye,in-game trainer scan
+3173,120,Lesser Mana Potion,in-game trainer scan
+3176,125,Lesser Troll's Blood Elixir,in-game trainer scan
+3177,130,Elixir of Lesser Defense,in-game trainer scan
+7837,130,Fire Oil,in-game trainer scan
+7845,140,Elixir of Fire Power,in-game trainer scan
+3452,160,Mana Potion,in-game trainer scan
+3448,165,Lesser Invisibility Potion,in-game trainer scan
+3450,175,Elixir of Lesser Fortitude,in-game trainer scan
+11449,185,Elixir of Agility,in-game trainer scan
+11450,195,Elixir of Defense,in-game trainer scan
+12609,200,Catseye Draught,in-game trainer scan
+11448,205,Greater Mana Potion,in-game trainer scan
+11451,205,Oil of Immolation,in-game trainer scan
+1249632,215,Viridian Dye,in-game trainer scan
+22808,215,Draught of Greater Water Breathing,in-game trainer scan
+2539,10,Spiced Wolf Meat,in-game trainer scan
+2541,50,Coyote Steak,in-game trainer scan
+6499,50,Boiled Clams,in-game trainer scan
+2544,75,Crab Cake,in-game trainer scan
+2546,80,Dry Pork Ribs,in-game trainer scan
+6500,125,Goblin Deviled Clams,in-game trainer scan
+21175,200,Spider Sausage,in-game trainer scan
+1230161,20,Lodestone,in-game trainer scan
+3304,65,Smelt Tin,in-game trainer window (screenshot)
+2659,65,Smelt Bronze,in-game trainer window (screenshot)
+2658,75,Smelt Silver,in-game trainer window (screenshot)
+3307,125,Smelt Iron,in-game trainer window (screenshot)
+3308,155,Smelt Gold,in-game trainer window (screenshot)
+3569,165,Smelt Steel,in-game trainer window (screenshot)
+10097,175,Smelt Mithril,in-game trainer window (screenshot)
+10098,230,Smelt Truesilver,in-game trainer window (screenshot)
+16153,250,Smelt Thorium,in-game trainer window (screenshot)
+1249637,275,Smelt Azerothium,in-game trainer window (screenshot)
+1306126,300,Smelt Heavy Thorium,in-game trainer window (screenshot)
+2662,15,Copper Chain Pants,in-game trainer scan
+2737,15,Copper Mace,in-game trainer scan
+1230171,20,Sharpening Wheel,in-game trainer scan
+1230656,20,Reagent Bot,in-game trainer scan
+2738,20,Copper Axe,in-game trainer scan
+3319,20,Copper Chain Boots,in-game trainer scan
+2739,25,Copper Shortsword,in-game trainer scan
+3320,25,Rough Grinding Stone,in-game trainer scan
+8880,25,Copper Dagger,in-game trainer scan
+9983,25,Copper Claymore,in-game trainer scan
+2661,30,Copper Chain Belt,in-game trainer scan
+3293,30,Copper Battle Axe,in-game trainer scan
+3922,30,Handful of Copper Bolts,in-game trainer scan
+3923,30,Rough Copper Bomb,in-game trainer scan
+1252229,35,Gemmed Copper Boots,in-game trainer scan
+1252230,35,Strange Copper Boots,in-game trainer scan
+1252231,35,Glowing Copper Boots,in-game trainer scan
+3323,35,Runed Copper Gauntlets,in-game trainer scan
+3324,35,Runed Copper Pants,in-game trainer scan
+2665,40,Coarse Sharpening Stone,in-game trainer scan
+3116,40,Coarse Weightstone,in-game trainer scan
+7408,40,Heavy Copper Maul,in-game trainer scan
+2666,45,Runed Copper Belt,in-game trainer scan
+3294,45,Thick War Axe,in-game trainer scan
+3326,50,Coarse Grinding Stone,in-game trainer scan
+3924,50,Copper Tube,in-game trainer scan
+3925,50,Rough Boomstick,in-game trainer scan
+7430,50,Arclight Spanner,in-game trainer scan
+3977,60,Crude Scope,in-game trainer scan
+3926,65,Copper Modulator,in-game trainer scan
+3929,75,Coarse Blasting Powder,in-game trainer scan
+3930,75,Crafted Heavy Shot,in-game trainer scan
+3931,75,Coarse Dynamite,in-game trainer scan
+1230564,20,Mana Well,wowhead.com/forever/spell=1230564 (looked up by hand)
+1249630,40,Cerulean Dye,wowhead.com/forever/spell=1249630 (looked up by hand)
+1249633,40,Sulfuric Acid,wowhead.com/forever/spell=1249633 (looked up by hand)
+2329,15,Elixir of Minor Strength,wowhead.com/forever/spell=2329 (looked up by hand)
+3170,15,Minor Troll's Blood Elixir,wowhead.com/forever/spell=3170 (looked up by hand)
+2331,25,Minor Mana Potion,wowhead.com/forever/spell=2331 (looked up by hand)
+2332,40,Minor Rejuvenation Potion,wowhead.com/forever/spell=2332 (looked up by hand)
+7836,80,Blackmouth Oil,wowhead.com/forever/spell=7836 (looked up by hand)
+1244645,85,Lesser Discolored Healing Potion,wowhead.com/forever/spell=1244645 (looked up by hand)
+2365,100,Draught of Tongues,wowhead.com/forever/spell=2365 (looked up by hand)
+3171,90,Elixir of Wisdom,wowhead.com/forever/spell=3171 (looked up by hand)
+7179,90,Draught of Water Breathing,wowhead.com/forever/spell=7179 (looked up by hand)
+7841,100,Swim Speed Potion,wowhead.com/forever/spell=7841 (looked up by hand)
+1244646,135,Discolored Healing Potion,wowhead.com/forever/spell=1244646 (looked up by hand)
+1244647,175,Greater Discolored Healing Potion,wowhead.com/forever/spell=1244647 (looked up by hand)
+11447,180,Draught of Water Walking,wowhead.com/forever/spell=11447 (looked up by hand)
+1250775,205,Revealing Draught,wowhead.com/forever/spell=1250775 (looked up by hand)
+11452,225,Restorative Potion,wowhead.com/forever/spell=11452 (looked up by hand)
+1244648,230,Superior Discolored Healing Potion,wowhead.com/forever/spell=1244648 (looked up by hand)
+11460,230,Draught of Detect Undead,wowhead.com/forever/spell=11460 (looked up by hand)
+15833,230,Dreamless Sleep Potion,wowhead.com/forever/spell=15833 (looked up by hand)
+11461,235,Arcane Elixir,wowhead.com/forever/spell=11461 (looked up by hand)
+11465,235,Elixir of Greater Intellect,wowhead.com/forever/spell=11465 (looked up by hand)
+17551,250,Stonescale Oil,wowhead.com/forever/spell=17551 (looked up by hand)
+446226,250,Flask of Everlasting Nightmares,wowhead.com/forever/spell=446226 (looked up by hand)
+446851,250,Jar of Nightmarish Mojo,wowhead.com/forever/spell=446851 (looked up by hand)
+448085,250,Flask of Restless Dreams,wowhead.com/forever/spell=448085 (looked up by hand)
+11467,240,Elixir of Greater Agility,wowhead.com/forever/spell=11467 (looked up by hand)
+11478,250,Draught of Detect Demon,wowhead.com/forever/spell=11478 (looked up by hand)
+19666,75,Silver Skeleton Key,wowhead.com/forever/spell=19666 (looked up by hand)
+7818,75,Silver Rod,wowhead.com/forever/spell=7818 (looked up by hand)
+2664,65,Runed Copper Bracers,wowhead.com/forever/spell=2664 (looked up by hand)
+2674,100,Heavy Sharpening Stone,wowhead.com/forever/spell=2674 (looked up by hand)
+3117,100,Heavy Weightstone,wowhead.com/forever/spell=3117 (looked up by hand)
+3337,100,Heavy Grinding Stone,wowhead.com/forever/spell=3337 (looked up by hand)
+7817,70,Rough Bronze Boots,wowhead.com/forever/spell=7817 (looked up by hand)
+3292,70,Heavy Copper Broadsword,wowhead.com/forever/spell=3292 (looked up by hand)
+3491,80,Big Bronze Knife,wowhead.com/forever/spell=3491 (looked up by hand)
+2740,85,Bronze Mace,wowhead.com/forever/spell=2740 (looked up by hand)
+3328,85,Rough Bronze Shoulders,wowhead.com/forever/spell=3328 (looked up by hand)
+6517,85,Pearl-handled Dagger,wowhead.com/forever/spell=6517 (looked up by hand)
+2668,80,Rough Bronze Leggings,wowhead.com/forever/spell=2668 (looked up by hand)
+2670,80,Rough Bronze Cuirass,wowhead.com/forever/spell=2670 (looked up by hand)
+2741,90,Bronze Axe,wowhead.com/forever/spell=2741 (looked up by hand)
+2672,95,Patterned Bronze Bracers,wowhead.com/forever/spell=2672 (looked up by hand)
+2742,95,Bronze Shortsword,wowhead.com/forever/spell=2742 (looked up by hand)
+8768,125,Iron Buckle,wowhead.com/forever/spell=8768 (looked up by hand)
+19667,125,Golden Skeleton Key,wowhead.com/forever/spell=19667 (looked up by hand)
+14379,125,Golden Rod,wowhead.com/forever/spell=14379 (looked up by hand)
+3296,105,Heavy Bronze Mace,wowhead.com/forever/spell=3296 (looked up by hand)
+3331,105,Silvered Bronze Boots,wowhead.com/forever/spell=3331 (looked up by hand)
+9986,105,Bronze Greatsword,wowhead.com/forever/spell=9986 (looked up by hand)
+3333,110,Silvered Bronze Gauntlets,wowhead.com/forever/spell=3333 (looked up by hand)
+9987,110,Bronze Battle Axe,wowhead.com/forever/spell=9987 (looked up by hand)
+2675,120,Shining Silver Breastplate,wowhead.com/forever/spell=2675 (looked up by hand)
+3506,130,Green Iron Leggings,wowhead.com/forever/spell=3506 (looked up by hand)
+9985,100,Bronze Warhammer,wowhead.com/forever/spell=9985 (looked up by hand)
+3501,140,Green Iron Bracers,wowhead.com/forever/spell=3501 (looked up by hand)
+3502,145,Green Iron Helm,wowhead.com/forever/spell=3502 (looked up by hand)
+9918,175,Solid Sharpening Stone,wowhead.com/forever/spell=9918 (looked up by hand)
+9920,175,Solid Grinding Stone,wowhead.com/forever/spell=9920 (looked up by hand)
+9921,175,Solid Weightstone,wowhead.com/forever/spell=9921 (looked up by hand)
+19668,175,Truesilver Skeleton Key,wowhead.com/forever/spell=19668 (looked up by hand)
+429348,175,Shifting Silver Breastplate,wowhead.com/forever/spell=429348 (looked up by hand)
+3508,155,Green Iron Hauberk,wowhead.com/forever/spell=3508 (looked up by hand)
+14380,175,Truesilver Rod,wowhead.com/forever/spell=14380 (looked up by hand)
+15972,155,Glinting Steel Dagger,wowhead.com/forever/spell=15972 (looked up by hand)
+7223,160,Golden Scale Bracers,wowhead.com/forever/spell=7223 (looked up by hand)
+9916,175,Steel Breastplate,wowhead.com/forever/spell=9916 (looked up by hand)
+9926,180,Heavy Mithril Shoulder,wowhead.com/forever/spell=9926 (looked up by hand)
+9928,180,Heavy Mithril Gauntlet,wowhead.com/forever/spell=9928 (looked up by hand)
+9931,185,Mithril Plate Pants,wowhead.com/forever/spell=9931 (looked up by hand)
+9935,190,Steel Plate Helm,wowhead.com/forever/spell=9935 (looked up by hand)
+9993,185,Heavy Mithril Axe,wowhead.com/forever/spell=9993 (looked up by hand)
+9954,200,Truesilver Gauntlets,wowhead.com/forever/spell=9954 (looked up by hand)
+9957,230,Orcish War Leggings,wowhead.com/forever/spell=9957 (looked up by hand)
+9959,205,Heavy Mithril Breastplate,wowhead.com/forever/spell=9959 (looked up by hand)
+9961,205,Mithril Coif,wowhead.com/forever/spell=9961 (looked up by hand)
+9968,210,Heavy Mithril Boots,wowhead.com/forever/spell=9968 (looked up by hand)
+10001,205,Big Black Mace,wowhead.com/forever/spell=10001 (looked up by hand)
+16639,225,Dense Grinding Stone,wowhead.com/forever/spell=16639 (looked up by hand)
+16640,225,Dense Weightstone,wowhead.com/forever/spell=16640 (looked up by hand)
+16641,225,Dense Sharpening Stone,wowhead.com/forever/spell=16641 (looked up by hand)
+9972,240,Ornate Mithril Breastplate,wowhead.com/forever/spell=9972 (looked up by hand)
+10003,210,The Shatterer,wowhead.com/forever/spell=10003 (looked up by hand)
+9974,220,Truesilver Breastplate,wowhead.com/forever/spell=9974 (looked up by hand)
+9979,245,Ornate Mithril Boots,wowhead.com/forever/spell=9979 (looked up by hand)
+9980,245,Ornate Mithril Helm,wowhead.com/forever/spell=9980 (looked up by hand)
+10007,220,Phantom Blade,wowhead.com/forever/spell=10007 (looked up by hand)
+10011,225,Blight,wowhead.com/forever/spell=10011 (looked up by hand)
+19669,250,Arcanite Skeleton Key,wowhead.com/forever/spell=19669 (looked up by hand)
+20201,250,Arcanite Rod,wowhead.com/forever/spell=20201 (looked up by hand)
+446179,250,Shoulderplates of Dread,wowhead.com/forever/spell=446179 (looked up by hand)
+446188,250,Fearmonger's Shoulderguards,wowhead.com/forever/spell=446188 (looked up by hand)
+446191,250,Baleful Pauldrons,wowhead.com/forever/spell=446191 (looked up by hand)
+10015,235,Truesilver Champion,wowhead.com/forever/spell=10015 (looked up by hand)
+27585,300,Heavy Obsidian Belt,wowhead.com/forever/spell=27585 (looked up by hand)
+27588,300,Light Obsidian Belt,wowhead.com/forever/spell=27588 (looked up by hand)
+28461,300,Ironvine Breastplate,wowhead.com/forever/spell=28461 (looked up by hand)
+28462,300,Ironvine Gloves,wowhead.com/forever/spell=28462 (looked up by hand)
+28463,300,Ironvine Belt,wowhead.com/forever/spell=28463 (looked up by hand)
+1230643,20,Enchanted Lute,wowhead.com/forever/spell=1230643 (looked up by hand)
+8366,unknown,Ironforge Chain,wowhead.com/forever: no learn level stated (checked by hand)
+430397,unknown,Blackfathom Sharpening Stone,wowhead.com/forever: no learn level stated (checked by hand)
+2671,unknown,Rough Bronze Bracers,wowhead.com/forever: no learn level stated (checked by hand)
+8368,unknown,Ironforge Gauntlets,wowhead.com/forever: no learn level stated (checked by hand)
+9942,unknown,Mithril Plate Gloves,wowhead.com/forever: no learn level stated (checked by hand)
+16960,unknown,Thorium Greatsword,wowhead.com/forever: no learn level stated (checked by hand)
+16965,unknown,Bleakwood Hew,wowhead.com/forever: no learn level stated (checked by hand)
+16967,unknown,Inlaid Thorium Hammer,wowhead.com/forever: no learn level stated (checked by hand)
+16980,unknown,Rune Edge,wowhead.com/forever: no learn level stated (checked by hand)
+461718,unknown,Tranquility,wowhead.com/forever: no learn level stated (checked by hand)
+461714,unknown,Desecration,wowhead.com/forever: no learn level stated (checked by hand)
+1213643,unknown,Obsidian Grinding Stone,wowhead.com/forever: no learn level stated (checked by hand)
+461712,unknown,Refined Hammer of the Titans,wowhead.com/forever: no learn level stated (checked by hand)
+461716,unknown,Deadly Heartseeker,wowhead.com/forever: no learn level stated (checked by hand)
+1213481,unknown,Razorspike Headcage,wowhead.com/forever: no learn level stated (checked by hand)
+1213484,unknown,Razorspike Shoulderplate,wowhead.com/forever: no learn level stated (checked by hand)
+1213490,unknown,Razorspike Battleplate,wowhead.com/forever: no learn level stated (checked by hand)
+1213492,unknown,Obsidian Reaver,wowhead.com/forever: no learn level stated (checked by hand)
+1213498,unknown,Obsidian Champion,wowhead.com/forever: no learn level stated (checked by hand)
+1213500,unknown,Obsidian Destroyer,wowhead.com/forever: no learn level stated (checked by hand)
+1213502,unknown,Obsidian Stormhammer,wowhead.com/forever: no learn level stated (checked by hand)
+1213504,unknown,Obsidian Sageblade,wowhead.com/forever: no learn level stated (checked by hand)
+1213506,unknown,Obsidian Defender,wowhead.com/forever: no learn level stated (checked by hand)
+1213709,unknown,Ironvine Belt,wowhead.com/forever: no learn level stated (checked by hand)
+1213711,unknown,Ironvine Gloves,wowhead.com/forever: no learn level stated (checked by hand)
+1213715,unknown,Ironvine Breastplate,wowhead.com/forever: no learn level stated (checked by hand)
+1213746,unknown,Heavy Obsidian Belt,wowhead.com/forever: no learn level stated (checked by hand)
+1213748,unknown,Light Obsidian Belt,wowhead.com/forever: no learn level stated (checked by hand)
+1214137,unknown,Obsidian Heartseeker,wowhead.com/forever: no learn level stated (checked by hand)
+1214257,unknown,Black Grasp of the Destroyer,wowhead.com/forever: no learn level stated (checked by hand)
+1214270,unknown,Jagged Obsidian Shield,wowhead.com/forever: no learn level stated (checked by hand)
+1214274,unknown,Obsidian Mail Tunic,wowhead.com/forever: no learn level stated (checked by hand)
+1214309,unknown,Dreamscale Visor,wowhead.com/forever: no learn level stated (checked by hand)
+1215507,unknown,Thick Obsidian Breastplate,wowhead.com/forever: no learn level stated (checked by hand)
+1223787,unknown,Icebane Breastplate,wowhead.com/forever: no learn level stated (checked by hand)
+1223789,unknown,Icebane Gauntlets,wowhead.com/forever: no learn level stated (checked by hand)
+1223791,unknown,Icebane Bracers,wowhead.com/forever: no learn level stated (checked by hand)
+16986,unknown,Blood Talon,wowhead.com/forever: no learn level stated (checked by hand)
+16987,unknown,Darkspear,wowhead.com/forever: no learn level stated (checked by hand)
+2334,50,Elixir of Minor Fortitude,in-game trainer scan

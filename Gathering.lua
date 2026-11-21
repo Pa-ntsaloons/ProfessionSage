@@ -206,8 +206,6 @@ end
 
 --------------------------------------------------------------------------------
 
-local playerFaction
-
 -- The brackets from your skill onward, with zones for your faction.
 -- Zones with the most nodes you've found (GatherMate2) come first; items you
 -- can gather now come first, most valuable at the top.
@@ -217,7 +215,7 @@ function ns.GatheringGuide(skillLine, skill)
   if not guide then
     return nil
   end
-  playerFaction = playerFaction or (UnitFactionGroup("player") == "Horde" and H or A)
+  local faction = ns.PlayerFaction() == "Horde" and H or A
   local counts = nodeCounts(skillLine)
   local anyCounts = false
 
@@ -226,7 +224,7 @@ function ns.GatheringGuide(skillLine, skill)
     if bracket.to > skill or bracket.to == 300 then
       local zones = {}
       for index, zone in ipairs(bracket.zones) do
-        if zone[2] == nil or zone[2] == playerFaction then
+        if zone[2] == nil or zone[2] == faction then
           local nodes = matchingNodes(counts and counts[zone[1]], skillLine, bracket.items)
           anyCounts = anyCounts or nodes > 0
           table.insert(zones, { name = zone[1], nodes = nodes, order = index })

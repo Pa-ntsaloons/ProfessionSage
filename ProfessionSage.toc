@@ -3,9 +3,9 @@
 ## Notes: Profit on every recipe, the cheapest route to your target skill, and a shopping list, right inside the profession window.
 ## Category: Professions
 ## Author: Pa_nts
-## Version: 2.2.1
+## Version: 2.3.0
 ## IconTexture: Interface\Icons\INV_Misc_Book_09
-## OptionalDeps: Auctionator, Questie, QuestieDB, TomTom, Blizzard_Professions
+## OptionalDeps: Auctionator, Questie, QuestieDB, TomTom, Syndicator, Blizzard_Professions
 ## SavedVariables: ProfessionSageDB
 ## SavedVariablesPerCharacter: ProfessionSageCharDB
 
@@ -17,6 +17,9 @@ Prices.lua
 Sources.lua
 Planner.lua
 Tracker.lua
+NodeTooltips.lua
 ProfessionsUI.lua
+PanelRows.lua
 Panel.lua
+GuideButton.lua
 Commands.lua

@@ -44,8 +44,7 @@ ns.Listen("DB_READY", runPending)
 
 function ns.AddRecipeTooltip(tooltip, recipe, crafts)
   crafts = crafts or 1
-  tooltip:AddLine(" ")
-  tooltip:AddLine(ns.TITLE, 0.85, 0.7, 0.43)
+  ns.TooltipHeading(tooltip, ns.TITLE)
 
   local cost, missing = Prices.CraftCost(recipe)
   local value, source = nil, nil
@@ -56,14 +55,13 @@ function ns.AddRecipeTooltip(tooltip, recipe, crafts)
   end
 
   if value then
-    local label = source == "vendor" and "Sells to vendor" or "Sells on AH"
-    tooltip:AddDoubleLine(label, ns.Money(value * crafts), 1, 0.82, 0, 1, 1, 1)
+    ns.TooltipPair(tooltip, source == "vendor" and "Sells to vendor" or "Sells on AH", ns.Money(value * crafts))
   end
   if cost then
-    tooltip:AddDoubleLine("Materials", ns.Money(cost * crafts), 1, 0.82, 0, 1, 1, 1)
+    ns.TooltipPair(tooltip, "Materials", ns.Money(cost * crafts))
   end
   if value and cost then
-    tooltip:AddDoubleLine("Profit", ns.Profit((value - cost) * crafts), 1, 0.82, 0, 1, 1, 1)
+    ns.TooltipPair(tooltip, "Profit", ns.Profit((value - cost) * crafts))
   end
   if missing then
     local names = {}
@@ -365,15 +363,46 @@ local function trackerTitle(recipe, crafts)
   return string.format("%s x%d", Recipes.Name(recipe), crafts)
 end
 
--- Missing materials for `crafts` of a recipe: count of items short.
-local function shortfall(recipe, crafts)
-  local short = 0
+-- Materials for `crafts` of a recipe, with what you have: list of
+-- { item, count, bags, bank }, plus how many items your bags are short of, how
+-- many are short even counting the bank, and how many of those your other
+-- characters (Syndicator) could cover.
+local function materialsFor(recipe, crafts)
+  local list, shortInBags, short, altsCover = {}, 0, 0, 0
   for _, entry in ipairs(Planner.Materials(recipe, crafts)) do
-    if (ns.GetItemCount(entry.item, true) or 0) < entry.count then
+    local bags = ns.GetItemCount(entry.item, false) or 0
+    local total = ns.GetItemCount(entry.item, true) or 0
+    local alts = ns.AltCounts(entry.item)
+    table.insert(list, { item = entry.item, count = entry.count, bags = bags, bank = math.max(0, total - bags) })
+    if bags < entry.count then
+      shortInBags = shortInBags + 1
+    end
+    if total < entry.count then
       short = short + 1
+      if total + alts >= entry.count then
+        altsCover = altsCover + 1
+      end
     end
   end
-  return short
+  return list, shortInBags, short, altsCover
+end
+
+-- Hovering the status: each material with what's in your bags and bank.
+local function materialsTooltip(owner)
+  local recipe = selectedRecipe()
+  if not recipe or not plan.box then
+    return
+  end
+  local crafts = plan.box:GetValue()
+  GameTooltip:SetOwner(owner, "ANCHOR_TOP")
+  GameTooltip:SetText(string.format("Materials for %d", crafts))
+  for index, entry in ipairs((materialsFor(recipe, crafts))) do
+    if index > 1 then
+      GameTooltip:AddLine(" ")
+    end
+    ns.AddMaterialLines(GameTooltip, entry.item, entry.count, entry.bags, entry.bank)
+  end
+  GameTooltip:Show()
 end
 
 function plan:Update(fromUser)
@@ -392,16 +421,28 @@ function plan:Update(fromUser)
   self.holder:ClearAllPoints()
   self.holder:SetPoint("BOTTOMLEFT", form, "BOTTOMLEFT", 14, (quality and quality:IsShown()) and 46 or 10)
 
+  -- Keep the status clear of Blizzard's "Track Recipe" checkbox.
+  local track = form.TrackRecipeCheckbox
+  self.status:ClearAllPoints()
+  self.status:SetPoint("LEFT", self.box, "RIGHT", self.statusGap, 0)
+  if track and track:IsShown() then
+    self.status:SetPoint("RIGHT", track, "LEFT", -4, 0)
+  end
+
   local crafts = self.box:GetValue()
-  local short = shortfall(recipe, crafts)
-  if short > 0 then
+  local _, shortInBags, short, altsCover = materialsFor(recipe, crafts)
+  if short > 0 and altsCover == short then
+    self.status:SetText("|cffffd100Some on alts|r")
+  elseif short > 0 then
     self.status:SetText(string.format("|cffff6060%d item%s short|r", short, short == 1 and "" or "s"))
+  elseif shortInBags > 0 then
+    self.status:SetText("|cffffd100Some in bank|r")
   else
-    self.status:SetText("|cff40c040You have everything|r")
+    self.status:SetText("|cff40c040All in bags|r")
   end
 
   local title = trackerTitle(recipe, crafts)
-  if fromUser then
+  if fromUser and ns.db.planPopup then
     if short > 0 then
       ns.Tracker:Track(title, Planner.Materials(recipe, crafts))
     elseif ns.Tracker:IsTracking() and ns.char.shopping.recipe == recipe.spell then
@@ -421,9 +462,32 @@ local function createPlanControls()
   holder:SetFrameLevel(form:GetFrameLevel() + 10)
   plan.holder = holder
 
+  -- Whether being short opens the materials popup.
+  local popupCheck = CreateFrame("CheckButton", nil, holder, "UICheckButtonTemplate")
+  popupCheck:SetSize(22, 22)
+  popupCheck:SetPoint("LEFT", -4, 0)
+  popupCheck:SetChecked(ns.db.planPopup)
+  popupCheck:SetScript("OnClick", function(self)
+    ns.db.planPopup = self:GetChecked() and true or false
+    local recipe = selectedRecipe()
+    if not ns.db.planPopup and recipe and ns.Tracker:IsTracking() and ns.char.shopping.recipe == recipe.spell then
+      ns.Tracker:Clear()
+    end
+    plan:Update(true)
+  end)
+  popupCheck:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText("Materials popup")
+    GameTooltip:AddLine("On: if you're short of materials for the amount you plan to make, a list of what you still need pops up at the side of your screen.", 1, 1, 1, true)
+    GameTooltip:AddLine("Off: only the status next to the amount shows what you're short of.", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  popupCheck:SetScript("OnLeave", GameTooltip_Hide)
+  plan.popupCheck = popupCheck
+
   local label = holder:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-  label:SetPoint("LEFT")
-  label:SetText("Plan to make")
+  label:SetPoint("LEFT", popupCheck, "RIGHT", 0, 0)
+  label:SetText("Plan")
 
   local ok, box = pcall(CreateFrame, "EditBox", nil, holder, "NumericInputSpinnerTemplate")
   if not ok then
@@ -448,14 +512,22 @@ local function createPlanControls()
   plan.box = box
 
   local status = holder:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-  status:SetPoint("LEFT", box, "RIGHT", ok and 28 or 10, 0)
+  plan.statusGap = ok and 28 or 10
+  status:SetPoint("LEFT", box, "RIGHT", plan.statusGap, 0)
+  status:SetJustifyH("LEFT")
+  status:SetWordWrap(false)
   plan.status = status
+
+  local statusHover = CreateFrame("Frame", nil, holder)
+  statusHover:SetAllPoints(status)
+  statusHover:SetScript("OnEnter", materialsTooltip)
+  statusHover:SetScript("OnLeave", GameTooltip_Hide)
 
   local help = CreateFrame("Frame", nil, holder)
   help:SetAllPoints(label)
   help:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:SetText("Plan to make")
+    GameTooltip:SetText("Plan")
     GameTooltip:AddLine("Choose how many you want to make, even more than you have materials for. If you're short, a list of what you still need pops up at the side of your screen.", 1, 1, 1, true)
     GameTooltip:Show()
   end)
